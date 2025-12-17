@@ -2,11 +2,13 @@ class Exercise {
   final String name;
   final int minutes;
   final int caloriesPerMinute;
+  final String gifKey;
 
   Exercise({
     required this.name,
     required this.minutes,
     required this.caloriesPerMinute,
+    required this.gifKey,
   });
 
   int get calories => minutes * caloriesPerMinute;

@@ -58,8 +58,9 @@ class _SetupPageState extends State<SetupPage> {
         await prefs.setStringList(
           'workout_${day.day}',
           day.exercises
-              .map((e) => '${e.name}|${e.minutes}|${e.caloriesPerMinute}')
-              .toList(),
+            .map((e) =>
+                '${e.name}|${e.minutes}|${e.caloriesPerMinute}|${e.gifKey}')
+            .toList(),
         );
       }
 

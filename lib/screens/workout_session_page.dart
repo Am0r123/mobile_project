@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mobile_project/models/workout_result_model.dart';
 import 'todays_workout_page.dart';
+import '../services/exercise_gif_mapper.dart';
+import 'package:mobile_project/models/workout_result_model.dart';
 
 class WorkoutSessionPage extends StatefulWidget {
   final List<Exercise> exercises;
@@ -27,6 +28,11 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     timer?.cancel();
 
     timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+
       if (remainingSeconds > 0) {
         setState(() => remainingSeconds--);
       } else {
@@ -34,8 +40,9 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
       }
     });
   }
+
   void _nextExercise() {
-    timer?.cancel(); // stop current timer
+    timer?.cancel();
     if (currentIndex + 1 < widget.exercises.length) {
       setState(() => currentIndex++);
       _startExercise();
@@ -45,10 +52,12 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   }
 
   void _finishWorkout() {
-    timer?.cancel(); // stop timer
+    timer?.cancel();
 
-    int totalMinutes = widget.exercises.fold(0, (sum, e) => sum + e.minutes);
-    int totalCalories = widget.exercises.fold(0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
+    int totalMinutes =
+        widget.exercises.fold(0, (sum, e) => sum + e.minutes);
+    int totalCalories =
+        widget.exercises.fold(0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
 
     Navigator.pop(
       context,
@@ -67,17 +76,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   }
 
   @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final current = widget.exercises[currentIndex];
-    final nextExerciseName = currentIndex + 1 < widget.exercises.length
-        ? widget.exercises[currentIndex + 1].name
-        : 'Finish';
 
     return Scaffold(
       appBar: AppBar(
@@ -91,50 +91,34 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Text(
-              _formatTime(remainingSeconds),
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
+            Text(_formatTime(remainingSeconds),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+
             const SizedBox(height: 12),
+
             Text(
               current.name,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red),
-              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red),
             ),
-            const SizedBox(height: 8),
-            Text("Next: $nextExerciseName"),
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 20),
+
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.fitness_center, size: 120, color: Colors.red.shade300),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Follow proper form and breathing.\nKeep steady pace.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
+              child: Image.network(
+                ExerciseGifMapper.getGif(current.gifKey),
+                fit: BoxFit.contain,
               ),
             ),
+
+            const SizedBox(height: 10),
+
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  if (currentIndex + 1 < widget.exercises.length) {
-                    _nextExercise();
-                  } else {
-                    _finishWorkout();
-                  }
-                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: _nextExercise,
                 child: Text(
                   currentIndex + 1 < widget.exercises.length ? "Skip" : "Finish",
                   style: const TextStyle(fontSize: 18, color: Colors.white),

@@ -81,10 +81,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
             ),
 
             const SizedBox(height: 20),
-
-            /// -------------------------------
-            /// RECENT EXERCISE (REAL DATA)
-            /// -------------------------------
             _SectionTitle(title: 'Recent Exercise', textColor: Colors.red),
             const SizedBox(height: 12),
 

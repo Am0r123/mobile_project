@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project/screens/workout_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_project/models/workout_result_model.dart';
 import 'workout_session_page.dart';
@@ -8,11 +7,13 @@ class Exercise {
   final String name;
   final int minutes;
   final int caloriesPerMinute;
+  final String gifKey;
 
   Exercise({
     required this.name,
     required this.minutes,
     required this.caloriesPerMinute,
+    required this.gifKey,
   });
 }
 
@@ -37,13 +38,7 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
     final dayIndex = DateTime.now().weekday - 1;
 
     const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
+      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
     ];
 
     final raw = prefs.getStringList('workout_${days[dayIndex]}') ?? [];
@@ -54,6 +49,7 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
         name: parts[0],
         minutes: int.parse(parts[1]),
         caloriesPerMinute: int.parse(parts[2]),
+        gifKey: parts[3],
       );
     }).toList();
   }
@@ -61,13 +57,7 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
   @override
   Widget build(BuildContext context) {
     final todayName = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
+      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
     ][DateTime.now().weekday - 1];
 
     return Scaffold(
@@ -95,15 +85,10 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
                 if (exercises.isEmpty)
                   const Text('Rest day 💤'),
 
-                ...exercises.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      '• ${e.name} – ${e.minutes} min',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
+                ...exercises.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text('• ${e.name} – ${e.minutes} min'),
+                )),
 
                 const Spacer(),
 
@@ -123,7 +108,8 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
                             final result = await Navigator.push<WorkoutResult>(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => WorkoutSessionPage(exercises: exercises),
+                                builder: (_) =>
+                                    WorkoutSessionPage(exercises: exercises),
                               ),
                             );
 
@@ -133,7 +119,7 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
                           },
                     child: const Text(
                       "Start Workout",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
                 ),

@@ -32,8 +32,12 @@ Rules:
   - name
   - minutes
   - caloriesPerMinute
-- Calories should be realistic
-- Respond with PURE JSON (no explanation)
+  - gifKey (snake_case identifier)
+
+gifKey examples:
+push_up, squat, plank, jumping_jacks, lunges, jogging
+
+Respond with PURE JSON only.
 
 JSON format:
 [
@@ -41,9 +45,10 @@ JSON format:
     "day": "Monday",
     "exercises": [
       {
-        "name": "Jogging",
-        "minutes": 25,
-        "caloriesPerMinute": 8
+        "name": "Push Ups",
+        "minutes": 10,
+        "caloriesPerMinute": 7,
+        "gifKey": "push_up"
       }
     ]
   }
@@ -62,7 +67,7 @@ JSON format:
           {'role': 'system', 'content': 'You generate workout plans.'},
           {'role': 'user', 'content': prompt},
         ],
-        'temperature': 0.7,
+        'temperature': 0.6,
       }),
     );
 
@@ -71,8 +76,11 @@ JSON format:
     }
 
     final data = jsonDecode(response.body);
-    final String content =
-        data['choices'][0]['message']['content'];
+    String content = data['choices'][0]['message']['content'];
+    content = content.replaceAll('```json', '');
+    content = content.replaceAll('```', '');
+    content = content.trim();
+
 
     final List<dynamic> jsonPlan = jsonDecode(content);
 
@@ -84,6 +92,7 @@ JSON format:
             name: ex['name'],
             minutes: ex['minutes'],
             caloriesPerMinute: ex['caloriesPerMinute'],
+            gifKey: ex['gifKey'],
           );
         }).toList(),
       );
