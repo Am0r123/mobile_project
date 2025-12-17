@@ -21,13 +21,13 @@ class _SupplementsPageState extends State<SupplementsPage> {
 
   // Your products list
   final List<Map<String, String>> products = [
-    { "title": "Whey Protein", "image": "https://placehold.co/200x200/png?text=Whey+Protein" },
-    { "title": "Creatine", "image": "https://placehold.co/200x200/png?text=Creatine" },
-    { "title": "Omega-3", "image": "https://placehold.co/200x200/png?text=Omega-3" },
-    { "title": "BCAA", "image": "https://placehold.co/200x200/png?text=BCAA" },
-    { "title": "Pre-Workout", "image": "https://placehold.co/200x200/png?text=Pre-Workout" },
-    { "title": "Multivitamin", "image": "https://placehold.co/200x200/png?text=Multivitamin" },
-    { "title": "L-Carnitine", "image": "https://placehold.co/200x200/png?text=L-Carnitine" },
+    { "title": "Whey Protein", "image": "assets/images/Whey Protein.jpg" },
+    { "title": "Creatine", "image": "assets/images/creatine.jpg" },
+    { "title": "Omega-3", "image": "assets/images/Omega-3.jpg" },
+    { "title": "BCAA", "image": "assets/images/BCAA.jpg" },
+    { "title": "Pre-Workout", "image": "assets/images/Pre-Workout.jpg" },
+    { "title": "Multivitamin", "image": "assets/images/Multivitamin.jpg" },
+    { "title": "L-Carnitine", "image": "assets/images/L-Carnitine.jpg" },
   ];
 
   @override
@@ -157,7 +157,7 @@ class ProductCard extends StatelessWidget {
         children: [
           Text(title, style: const TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Image.network(imageUrl, height: 100, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 50, color: Colors.grey)),
+          Image.asset(imageUrl, height: 100, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 50, color: Colors.grey)),
           const SizedBox(height: 10),
           const Text("Premium Quality", style: TextStyle(color: Colors.grey)),
         ],
