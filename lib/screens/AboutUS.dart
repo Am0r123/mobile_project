@@ -14,36 +14,6 @@ class AboutUsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      
-      // --- MENU DRAWER ---
-      drawer: Drawer(
-        backgroundColor: Colors.grey[900],
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: const [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.red),
-              child: Center(child: Text('FGYM Menu', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))),
-            ),
-            ListTile(leading: Icon(Icons.home, color: Colors.white), title: Text('Home', style: TextStyle(color: Colors.white))),
-            ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('About', style: TextStyle(color: Colors.white))),
-          ],
-        ),
-      ),
-
-      // --- APP BAR ---
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white), 
-        centerTitle: true,
-        title: const Text("FGYM", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-        actions: [
-          IconButton(icon: const Icon(Icons.person, color: Colors.white), onPressed: () {}),
-        ],
-      ),
-
-      // --- BODY ---
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

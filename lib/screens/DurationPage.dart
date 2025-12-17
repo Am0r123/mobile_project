@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project/screens/PAY.dart';
 
 class DurationPage extends StatelessWidget {
   final String planName;
@@ -118,8 +119,9 @@ class DurationCard extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Joined Successfully!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PaymentPage()),
                 );
               },
               child: const Text(

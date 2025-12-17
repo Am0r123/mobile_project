@@ -35,7 +35,7 @@ class _SupplementsPageState extends State<SupplementsPage> {
     super.initState();
     // Using a valid video ID as per Lecture 3 (Assets/Network) concepts
     _videoController = YoutubePlayerController(
-      initialVideoId: 'bWOX3hN_rLw',
+      initialVideoId: 'gDRhZF6Ko7k',
       flags: const YoutubePlayerFlags(autoPlay: false, mute: false, enableCaption: false),
     );
   }
@@ -63,21 +63,6 @@ class _SupplementsPageState extends State<SupplementsPage> {
         centerTitle: true,
         // The Menu icon appears automatically because we added a 'drawer' below!
         iconTheme: const IconThemeData(color: Colors.white, size: 30), 
-      ),
-
-      // 3. DRAWER: Standard side menu as explained in Lecture 4[cite: 547].
-      drawer: Drawer(
-        backgroundColor: Colors.grey[900],
-        child: ListView(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.red),
-              child: Center(child: Text('FGYM Menu', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))),
-            ),
-            ListTile(leading: const Icon(Icons.home, color: Colors.white), title: const Text('Home', style: TextStyle(color: Colors.white)), onTap: () {}),
-            ListTile(leading: const Icon(Icons.shopping_cart, color: Colors.white), title: const Text('Shop', style: TextStyle(color: Colors.white)), onTap: () {}),
-          ],
-        ),
       ),
 
       // 4. STACK: Layering widgets as per Lecture 4 (Slide 114)[cite: 822].
