@@ -36,7 +36,6 @@ class _TrainersPageState extends State<TrainersPage> {
     super.initState();
     _pageController = PageController(viewportFraction: 0.85);
 
-    /// Wait until PageView is attached
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAutoSlide();
     });
@@ -186,9 +185,7 @@ class _TrainersPageState extends State<TrainersPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),

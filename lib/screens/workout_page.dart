@@ -3,9 +3,6 @@ import 'workout_session_page.dart';
 import 'todays_workout_page.dart';
 import 'package:mobile_project/models/workout_result_model.dart';
 
-/// -------------------------------
-/// WORKOUT PAGE
-/// -------------------------------
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
@@ -44,10 +41,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
               shadowColor: shadowColor,
             ),
             const SizedBox(height: 16),
-
-            /// -------------------------------
-            /// MINI STATS
-            /// -------------------------------
             SizedBox(
               height: 150,
               child: ListView(
@@ -113,12 +106,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   style: TextStyle(color: subTextColor),
                 ),
               ),
-
             const SizedBox(height: 24),
-
-            /// -------------------------------
-            /// START WORKOUT BUTTON
-            /// -------------------------------
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -155,9 +143,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 }
 
-/// -------------------------------
-/// UI COMPONENTS (UNCHANGED)
-/// -------------------------------
 class _MainStatsCard extends StatelessWidget {
   final Color cardColor;
   final Color textColor;

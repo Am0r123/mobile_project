@@ -46,7 +46,6 @@ class _SetupPageState extends State<SetupPage> {
       await prefs.setString('availability', availability);
       await prefs.setString('goal', goal);
 
-      /// 🔥 AI CALL (ASYNC)
       final plan = await WorkoutAIService.generateWeeklyPlan(
         age: age,
         weight: weight,
