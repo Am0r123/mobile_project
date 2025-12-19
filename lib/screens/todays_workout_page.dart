@@ -26,19 +26,27 @@ class TodaysWorkoutPage extends StatefulWidget {
 
 class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
   late Future<List<Exercise>> todayWorkout;
+  late Future<bool> completedToday;
 
   @override
   void initState() {
     super.initState();
-    todayWorkout = loadTodayWorkout();
+    todayWorkout = _loadTodayWorkout();
+    completedToday = _isTodayCompleted();
   }
 
-  Future<List<Exercise>> loadTodayWorkout() async {
+  Future<List<Exercise>> _loadTodayWorkout() async {
     final prefs = await SharedPreferences.getInstance();
     final dayIndex = DateTime.now().weekday - 1;
 
     const days = [
-      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
     ];
 
     final raw = prefs.getStringList('workout_${days[dayIndex]}') ?? [];
@@ -54,76 +62,151 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
     }).toList();
   }
 
+  Future<bool> _isTodayCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    return prefs.getString('last_completed_day') == today;
+  }
+
+  Future<void> _markTodayCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    await prefs.setString('last_completed_day', today);
+    setState(() {
+      completedToday = Future.value(true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final todayName = [
-      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
+    final todayName = const [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
     ][DateTime.now().weekday - 1];
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Today's Workout")),
+      appBar: AppBar(
+        title: const Text("Today's Workout"),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: FutureBuilder<List<Exercise>>(
           future: todayWorkout,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+          builder: (context, workoutSnap) {
+            if (!workoutSnap.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final exercises = snapshot.data!;
+            final exercises = workoutSnap.data!;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$todayName's Workout",
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
+            return FutureBuilder<bool>(
+              future: completedToday,
+              builder: (context, completedSnap) {
+                final isCompleted = completedSnap.data ?? false;
 
-                if (exercises.isEmpty)
-                  const Text('Rest day 💤'),
-
-                ...exercises.map((e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text('• ${e.name} – ${e.minutes} min'),
-                )),
-
-                const Spacer(),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$todayName's Workout",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
                       ),
                     ),
-                    onPressed: exercises.isEmpty
-                        ? null
-                        : () async {
-                            final result = await Navigator.push<WorkoutResult>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    WorkoutSessionPage(exercises: exercises),
-                              ),
-                            );
+                    const SizedBox(height: 20),
 
-                            if (result != null && context.mounted) {
-                              Navigator.pop(context, result);
-                            }
-                          },
-                    child: const Text(
-                      "Start Workout",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    if (exercises.isEmpty)
+                      const Text(
+                        'Rest day 💤',
+                        style: TextStyle(fontSize: 16),
+                      ),
+
+                    ...exercises.map(
+                      (e) => Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: Icon(
+                            isCompleted
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color: isCompleted ? Colors.green : Colors.grey,
+                          ),
+                          title: Text(
+                            e.name,
+                            style: TextStyle(
+                              fontSize: 16,
+                              decoration:
+                                  isCompleted ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${e.minutes} min • ${e.caloriesPerMinute * e.minutes} cal',
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+
+                    const Spacer(),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isCompleted || exercises.isEmpty ? Colors.grey : Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: isCompleted || exercises.isEmpty
+                            ? null
+                            : () async {
+                                final result = await Navigator.push<WorkoutResult>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WorkoutSessionPage(
+                                      exercises: exercises,
+                                    ),
+                                  ),
+                                );
+
+                                if (result != null && context.mounted) {
+                                  // Save workout and mark today as completed
+                                  final prefs = await SharedPreferences.getInstance();
+                                  final raw =
+                                      prefs.getStringList('workout_history') ?? [];
+                                  final today = DateTime.now().toIso8601String().split('T').first;
+                                  raw.add('$today|${result.totalMinutes}|${result.totalCalories}');
+                                  await prefs.setStringList('workout_history', raw);
+
+                                  await _markTodayCompleted();
+
+                                  Navigator.pop(context, result);
+                                }
+                              },
+                        child: Text(
+                          isCompleted ? 'Workout Completed ✔' : 'Start Workout',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),

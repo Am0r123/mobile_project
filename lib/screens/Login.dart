@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notfication.dart';
 
 class LoginPage extends StatefulWidget {
+  final VoidCallback toggleTheme;
+
+  const LoginPage({super.key, required this.toggleTheme});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -22,13 +27,15 @@ class _LoginPageState extends State<LoginPage> {
       if (response.user != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => NotificationPage()),
+          MaterialPageRoute(
+            builder: (_) => MainLayout(toggleTheme: (_) => widget.toggleTheme()),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -37,42 +44,40 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF34495E),
+      backgroundColor: const Color(0xFF34495E),
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 "SIGN IN",
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 40),
-
+              const SizedBox(height: 40),
               _buildInput("EMAIL", emailController),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               _buildInput("PASSWORD", passwordController, isPassword: true),
-              SizedBox(height: 40),
-
+              const SizedBox(height: 40),
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
                   onPressed: isLoading ? null : login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1E88E5),
+                    backgroundColor: const Color(0xFF1E88E5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                   child: isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
                           "LOGIN",
                           style: TextStyle(
                             color: Colors.white,
@@ -81,13 +86,15 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                 ),
               ),
-
               TextButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => SignUpPage()),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SignUpPage(toggleTheme: widget.toggleTheme),
+                  ),
                 ),
-                child: Text(
+                child: const Text(
                   "Create an account",
                   style: TextStyle(color: Colors.white70),
                 ),
@@ -101,6 +108,10 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key, required this.toggleTheme});
+
+  final VoidCallback toggleTheme;
+
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
@@ -119,14 +130,14 @@ class _SignUpPageState extends State<SignUpPage> {
       );
       if (response.user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Account created! Please login.')),
+          const SnackBar(content: Text('Account created! Please login.')),
         );
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -135,19 +146,19 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF34495E),
+      backgroundColor: const Color(0xFF34495E),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              const Text(
                 "SIGN UP",
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -156,26 +167,24 @@ class _SignUpPageState extends State<SignUpPage> {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 40),
-
+              const SizedBox(height: 40),
               _buildInput("EMAIL", emailController),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               _buildInput("PASSWORD", passwordController, isPassword: true),
-              SizedBox(height: 40),
-
+              const SizedBox(height: 40),
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
                   onPressed: isLoading ? null : signUp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1E88E5),
+                    backgroundColor: const Color(0xFF1E88E5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                   child: isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
                           "SIGN UP",
                           style: TextStyle(
                             color: Colors.white,
@@ -204,7 +213,7 @@ Widget _buildInput(
         padding: const EdgeInsets.only(left: 10, bottom: 8),
         child: Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white70,
             fontWeight: FontWeight.bold,
             fontSize: 12,
@@ -213,14 +222,14 @@ Widget _buildInput(
       ),
       Container(
         decoration: BoxDecoration(
-          color: Color(0xFF5D768B),
+          color: const Color(0xFF5D768B),
           borderRadius: BorderRadius.circular(30),
         ),
         child: TextField(
           controller: controller,
           obscureText: isPassword,
-          style: TextStyle(color: Colors.white),
-          decoration: InputDecoration(
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           ),

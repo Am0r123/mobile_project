@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'workout_session_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'todays_workout_page.dart';
 import 'package:mobile_project/models/workout_result_model.dart';
 
@@ -12,187 +12,203 @@ class WorkoutPage extends StatefulWidget {
 
 class _WorkoutPageState extends State<WorkoutPage> {
   WorkoutResult? lastWorkout;
+  List<WorkoutResult> history = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('workout_history') ?? [];
+
+    final parsed = raw.map((e) {
+      final p = e.split('|');
+      return WorkoutResult(
+        name: "Workout",
+        totalMinutes: int.parse(p[1]),
+        totalCalories: int.parse(p[2]),
+      );
+    }).toList();
+
+    setState(() {
+      history = parsed;
+      if (parsed.isNotEmpty) lastWorkout = parsed.last;
+    });
+  }
+
+  Future<void> _saveWorkout(WorkoutResult result) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+
+    final raw = prefs.getStringList('workout_history') ?? [];
+    raw.add('$today|${result.totalMinutes}|${result.totalCalories}');
+    await prefs.setStringList('workout_history', raw);
+
+    _loadHistory();
+  }
+
+  int get totalMinutes => history.fold(0, (sum, e) => sum + e.totalMinutes);
+  int get totalCalories => history.fold(0, (sum, e) => sum + e.totalCalories);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = Theme.of(context).scaffoldBackgroundColor;
-    final cardColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final shadowColor = isDark ? Colors.black54 : Colors.grey.withOpacity(0.2);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final shadow = isDark ? Colors.black54 : Colors.black12;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text('Fitness Tracker'),
-        centerTitle: true,
-        backgroundColor: isDark ? Colors.black : Colors.red,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _MainStatsCard(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: shadow, blurRadius: 10)],
+            ),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: Colors.red.shade400,
+                  child: const Icon(Icons.person, size: 40, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                Text('You', style: TextStyle(color: textColor, fontSize: 16)),
+                const SizedBox(height: 6),
+                Text('${history.length}',
+                    style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold)),
+                Text('Workouts Completed', style: TextStyle(color: subTextColor)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _Stat('Minutes', '$totalMinutes'),
+                    _Stat('Calories', '$totalCalories'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 150,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _InsightCard(
+                  title: 'Sleep',
+                  value: '6h 41m',
+                  subtitle: 'Restless',
+                  icon: Icons.bedtime,
+                  cardColor: cardColor,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  shadow: shadow,
+                ),
+                _InsightCard(
+                  title: 'Heart',
+                  value: '84 bpm',
+                  subtitle: 'Resting',
+                  icon: Icons.favorite,
+                  cardColor: cardColor,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  shadow: shadow,
+                ),
+                _InsightCard(
+                  title: 'Weight',
+                  value: '3.9 lbs',
+                  subtitle: 'To Goal',
+                  icon: Icons.monitor_weight,
+                  cardColor: cardColor,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  shadow: shadow,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          _SectionTitle('Recent Workout'),
+          const SizedBox(height: 12),
+          ...history.reversed.map(
+            (e) => _WorkoutTile(
+              result: e,
               cardColor: cardColor,
               textColor: textColor,
               subTextColor: subTextColor,
-              shadowColor: shadowColor,
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 150,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _MiniStatCard(
-                    title: 'Sleep',
-                    value: '6h 41m',
-                    subtitle: 'Restless',
-                    icon: Icons.bedtime,
-                    cardColor: cardColor,
-                    textColor: textColor,
-                    subTextColor: subTextColor,
-                    shadowColor: shadowColor,
-                  ),
-                  _MiniStatCard(
-                    title: 'Heart',
-                    value: '84 bpm',
-                    subtitle: 'Resting',
-                    icon: Icons.favorite,
-                    cardColor: cardColor,
-                    textColor: textColor,
-                    subTextColor: subTextColor,
-                    shadowColor: shadowColor,
-                  ),
-                  _MiniStatCard(
-                    title: 'Weight',
-                    value: '3.9 lbs',
-                    subtitle: 'To Goal',
-                    icon: Icons.monitor_weight,
-                    cardColor: cardColor,
-                    textColor: textColor,
-                    subTextColor: subTextColor,
-                    shadowColor: shadowColor,
-                  ),
-                ],
-              ),
-            ),
+          ),
 
-            const SizedBox(height: 20),
-            _SectionTitle(title: 'Recent Exercise', textColor: Colors.red),
-            const SizedBox(height: 12),
+          const SizedBox(height: 30),
 
-            if (lastWorkout != null)
-              _ExerciseTile(
-                title: lastWorkout!.name,
-                duration: '${lastWorkout!.totalMinutes} min',
-                calories: '${lastWorkout!.totalCalories} cal',
-                cardColor: cardColor,
-                textColor: textColor,
-                subTextColor: subTextColor,
-                shadowColor: shadowColor,
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'No workout completed yet',
-                  style: TextStyle(color: subTextColor),
+          SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              onPressed: () async {
+                final result = await Navigator.push<WorkoutResult>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TodaysWorkoutPage(),
                   ),
-                  elevation: 4,
-                ),
-                onPressed: () async {
-                  final result = await Navigator.push<WorkoutResult>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TodaysWorkoutPage(),
-                    ),
-                  );
-
-                  if (result != null) {
-                    setState(() => lastWorkout = result);
-                  }
-                },
-                child: Text(
-                  'Start Workout',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                );
+                if (result != null) await _saveWorkout(result);
+              },
+              child: const Text(
+                'Go to Today’s Workout',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MainStatsCard extends StatelessWidget {
-  final Color cardColor;
-  final Color textColor;
-  final Color subTextColor;
-  final Color shadowColor;
+class _Stat extends StatelessWidget {
+  final String label;
+  final String value;
 
-  const _MainStatsCard({
-    required this.cardColor,
-    required this.textColor,
-    required this.subTextColor,
-    required this.shadowColor,
-  });
+  const _Stat(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: Colors.red.shade400,
-            child: const Icon(Icons.fitness_center, size: 40, color: Colors.white),
-          ),
-          const SizedBox(height: 14),
-          Text('You', style: TextStyle(color: textColor, fontSize: 16)),
-          const SizedBox(height: 6),
-          const Text(
-            '41,406',
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text('Steps Today', style: TextStyle(color: subTextColor)),
-        ],
-      ),
+    return Column(
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red)),
+        Text(label),
+      ],
     );
   }
 }
 
-class _MiniStatCard extends StatelessWidget {
+class _InsightCard extends StatelessWidget {
   final String title;
   final String value;
   final String subtitle;
@@ -200,9 +216,9 @@ class _MiniStatCard extends StatelessWidget {
   final Color cardColor;
   final Color textColor;
   final Color subTextColor;
-  final Color shadowColor;
+  final Color shadow;
 
-  const _MiniStatCard({
+  const _InsightCard({
     required this.title,
     required this.value,
     required this.subtitle,
@@ -210,7 +226,7 @@ class _MiniStatCard extends StatelessWidget {
     required this.cardColor,
     required this.textColor,
     required this.subTextColor,
-    required this.shadowColor,
+    required this.shadow,
   });
 
   @override
@@ -218,38 +234,27 @@ class _MiniStatCard extends StatelessWidget {
     return Container(
       width: 150,
       margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: shadow, blurRadius: 8)],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Icon(icon, color: Colors.red, size: 28),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(value,
+                  style: TextStyle(
+                      color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(subtitle, style: TextStyle(color: subTextColor, fontSize: 12)),
             ],
-          ),
+          )
         ],
       ),
     );
@@ -258,78 +263,51 @@ class _MiniStatCard extends StatelessWidget {
 
 class _SectionTitle extends StatelessWidget {
   final String title;
-  final Color textColor;
-
-  const _SectionTitle({required this.title, required this.textColor});
+  const _SectionTitle(this.title);
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+    return Text(
+      title,
+      style: const TextStyle(color: Colors.red, fontSize: 22, fontWeight: FontWeight.bold),
     );
   }
 }
 
-class _ExerciseTile extends StatelessWidget {
-  final String title;
-  final String duration;
-  final String calories;
+class _WorkoutTile extends StatelessWidget {
+  final WorkoutResult result;
   final Color cardColor;
   final Color textColor;
   final Color subTextColor;
-  final Color shadowColor;
 
-  const _ExerciseTile({
-    required this.title,
-    required this.duration,
-    required this.calories,
+  const _WorkoutTile({
+    required this.result,
     required this.cardColor,
     required this.textColor,
     required this.subTextColor,
-    required this.shadowColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          const Icon(Icons.directions_run, color: Colors.red, size: 28),
+          const Icon(Icons.check_circle, color: Colors.green),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(color: textColor, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(
-                  '$duration • $calories',
-                  style: TextStyle(color: subTextColor),
-                ),
-              ],
-            ),
-          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(result.name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+              Text('${result.totalMinutes} min • ${result.totalCalories} cal',
+                  style: TextStyle(color: subTextColor)),
+            ],
+          )
         ],
       ),
     );

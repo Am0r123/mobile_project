@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'todays_workout_page.dart';
 import '../services/exercise_gif_mapper.dart';
 import 'package:mobile_project/models/workout_result_model.dart';
@@ -51,14 +52,21 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     }
   }
 
-  void _finishWorkout() {
+  void _finishWorkout() async {
     timer?.cancel();
-
     int totalMinutes =
         widget.exercises.fold(0, (sum, e) => sum + e.minutes);
     int totalCalories =
-        widget.exercises.fold(0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
+        widget.exercises.fold(
+            0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final history =
+        prefs.getStringList('completed_workouts') ?? [];
 
+    history.add('$today|$totalMinutes|$totalCalories');
+    await prefs.setStringList('completed_workouts', history);
+    await prefs.setString('last_completed_day', today);
     Navigator.pop(
       context,
       WorkoutResult(

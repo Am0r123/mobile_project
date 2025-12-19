@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project/main.dart';
 import 'package:mobile_project/services/workout_ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'workout_page.dart';
 
 class SetupPage extends StatefulWidget {
-  const SetupPage({super.key});
+  final Function(bool) toggleTheme;
+  const SetupPage({super.key, required this.toggleTheme});
 
   @override
   State<SetupPage> createState() => _SetupPageState();
@@ -65,10 +67,13 @@ class _SetupPageState extends State<SetupPage> {
       }
 
       if (!mounted) return;
+      await prefs.setBool('setupDone', true);
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const WorkoutPage()),
+        MaterialPageRoute(
+          builder: (_) => MainLayout(toggleTheme: widget.toggleTheme),
+        ),
       );
     } catch (e) {
       if (!mounted) return;

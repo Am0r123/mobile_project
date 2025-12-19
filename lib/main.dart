@@ -95,7 +95,9 @@ class _MainAppState extends State<MainApp> {
           }
 
           if (!(snapshot.data ?? false)) {
-            return const SetupPage();
+            return SetupPage(
+              toggleTheme: toggleTheme,
+            );
           }
 
           return MainLayout(toggleTheme: toggleTheme);
@@ -117,17 +119,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
-
-  final List<Widget> _pages = const [
-    HomePage(),
-    TrainersPage(),
-    WorkoutPage(),
-    PlansPage(),
-    SupplementsPage(),
-    ContactPage(),
-    AboutUsPage(),
-    NotificationPage(),
-  ];
+  late final List<Widget> _pages;
 
   final List<String> _titles = [
     'Home',
@@ -137,8 +129,26 @@ class _MainLayoutState extends State<MainLayout> {
     'Shop',
     'Contact Us',
     'About Us',
-    'Notfication',
+    'Notification',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomePage(toggleTheme: () {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        widget.toggleTheme(!isDark);
+      }),
+      TrainersPage(),
+      WorkoutPage(),
+      PlansPage(),
+      SupplementsPage(),
+      ContactPage(),
+      AboutUsPage(),
+      NotificationPage(),
+    ];
+  }
 
   void _onSelectPage(int index) {
     setState(() => _selectedIndex = index);
@@ -147,7 +157,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -176,61 +186,51 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                 ),
               ),
-
               _DrawerItem(
-                icon: Icons.home,
-                title: 'Home',
-                isActive: _selectedIndex == 0,
-                onTap: () => _onSelectPage(0),
-              ),
+                  icon: Icons.home,
+                  title: 'Home',
+                  isActive: _selectedIndex == 0,
+                  onTap: () => _onSelectPage(0)),
               _DrawerItem(
-                icon: Icons.people,
-                title: 'Trainers',
-                isActive: _selectedIndex == 1,
-                onTap: () => _onSelectPage(1),
-              ),
+                  icon: Icons.people,
+                  title: 'Trainers',
+                  isActive: _selectedIndex == 1,
+                  onTap: () => _onSelectPage(1)),
               _DrawerItem(
-                icon: Icons.dashboard,
-                title: 'Dashboard',
-                isActive: _selectedIndex == 2,
-                onTap: () => _onSelectPage(2),
-              ),
+                  icon: Icons.dashboard,
+                  title: 'Dashboard',
+                  isActive: _selectedIndex == 2,
+                  onTap: () => _onSelectPage(2)),
               _DrawerItem(
-                icon: Icons.fitness_center,
-                title: 'Plans',
-                isActive: _selectedIndex == 3,
-                onTap: () => _onSelectPage(3),
-              ),
+                  icon: Icons.fitness_center,
+                  title: 'Plans',
+                  isActive: _selectedIndex == 3,
+                  onTap: () => _onSelectPage(3)),
               _DrawerItem(
-                icon: Icons.shopping_bag,
-                title: 'Shop',
-                isActive: _selectedIndex == 4,
-                onTap: () => _onSelectPage(4),
-              ),
+                  icon: Icons.shopping_bag,
+                  title: 'Shop',
+                  isActive: _selectedIndex == 4,
+                  onTap: () => _onSelectPage(4)),
               _DrawerItem(
-                icon: Icons.contact_mail,
-                title: 'Contact Us',
-                isActive: _selectedIndex == 5,
-                onTap: () => _onSelectPage(5),
-              ),
+                  icon: Icons.contact_mail,
+                  title: 'Contact Us',
+                  isActive: _selectedIndex == 5,
+                  onTap: () => _onSelectPage(5)),
               _DrawerItem(
-                icon: Icons.info,
-                title: 'About Us',
-                isActive: _selectedIndex == 6,
-                onTap: () => _onSelectPage(6),
-              ),
+                  icon: Icons.info,
+                  title: 'About Us',
+                  isActive: _selectedIndex == 6,
+                  onTap: () => _onSelectPage(6)),
               _DrawerItem(
-                icon: Icons.notifications,
-                title: 'Notification',
-                isActive: _selectedIndex == 7,
-                onTap: () => _onSelectPage(7),
-              ),
+                  icon: Icons.notifications,
+                  title: 'Notification',
+                  isActive: _selectedIndex == 7,
+                  onTap: () => _onSelectPage(7)),
               const Spacer(),
             ],
           ),
         ),
       ),
-
       body: _pages[_selectedIndex],
     );
   }
@@ -239,7 +239,8 @@ class _MainLayoutState extends State<MainLayout> {
 /* ============================= HOME PAGE ============================= */
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final VoidCallback toggleTheme;
+  const HomePage({super.key, required this.toggleTheme});
 
   @override
   Widget build(BuildContext context) {
@@ -249,8 +250,7 @@ class HomePage extends StatelessWidget {
           decoration: const BoxDecoration(
             image: DecorationImage(
               image: NetworkImage(
-                'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=700&auto=format&fit=crop&q=60',
-              ),
+                  'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=700&auto=format&fit=crop&q=60'),
               fit: BoxFit.cover,
             ),
           ),
@@ -261,8 +261,8 @@ class HomePage extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withValues(alpha: 0.3),
-                Colors.black.withValues(alpha: 0.9),
+                Colors.black.withOpacity(0.3),
+                Colors.black.withOpacity(0.9),
               ],
             ),
           ),
@@ -283,7 +283,8 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD6FF3F),
                   borderRadius: BorderRadius.circular(6),
@@ -310,7 +311,10 @@ class HomePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => LoginPage()),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                LoginPage(toggleTheme: toggleTheme),
+                          ),
                         );
                       },
                       child: const Text('SIGN IN'),
@@ -322,7 +326,10 @@ class HomePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => LoginPage()),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                LoginPage(toggleTheme: toggleTheme),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
