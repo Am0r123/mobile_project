@@ -15,8 +15,8 @@ class NotificationPage extends StatelessWidget {
       theme: ThemeData(
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: Colors.white,
-        primaryColor: Color(0xFF34495E),
-        appBarTheme: AppBarTheme(
+        primaryColor: const Color(0xFF34495E),
+        appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF34495E),
           foregroundColor: Colors.white,
         ),
@@ -38,22 +38,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
+  // The screens to swap between
   static final List<Widget> _widgetOptions = <Widget>[
-    NotificationScreen(),
-
-    Center(
+    NotificationScreen(), // Index 0
+    const Center(
       child: Text(
         'Your Steps Today',
         style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
       ),
-    ),
-
-    Center(
+    ), // Index 1
+    const Center(
       child: Text(
-        'New',
+        'New Notifications',
         style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
       ),
-    ),
+    ), // Index 2
   ];
 
   void _onItemTapped(int index) {
@@ -65,80 +64,35 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
-        ),
-      ),
+     
       body: _widgetOptions[_selectedIndex],
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF34495E)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Notfications',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            ListTile(
-              leading: Icon(Icons.home),
-              title: const Text('New Day Workouts'),
-              selected: _selectedIndex == 0,
-              selectedColor: Colors.red,
-              onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
-              },
-            ),
-
-            ListTile(
-              leading: Icon(Icons.notifications),
-              title: const Text('Your Steps Today'),
-              selected: _selectedIndex == 1,
-              selectedColor: Colors.red,
-              onTap: () {
-                _onItemTapped(1);
-                Navigator.pop(context);
-              },
-            ),
-
-            ListTile(
-              leading: Icon(Icons.settings),
-              title: const Text('New Notifications'),
-              selected: _selectedIndex == 2,
-              selectedColor: Colors.red,
-              onTap: () {
-                _onItemTapped(2);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
+      
+      // Added BottomNavigationBar instead of Drawer
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Workouts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_walk), // Changed icon to match "Steps"
+            label: 'Steps',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'New',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.red, // Keeps your red selection style
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
       ),
     );
   }
 }
+
+// --- Your existing NotificationScreen code remains unchanged below ---
 
 class NotificationScreen extends StatelessWidget {
   @override
@@ -148,7 +102,7 @@ class NotificationScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             "Notification Details",
             style: TextStyle(
               fontSize: 32,
@@ -156,19 +110,18 @@ class NotificationScreen extends StatelessWidget {
               color: Color(0xFF333333),
             ),
           ),
-          SizedBox(height: 40),
-
+          const SizedBox(height: 40),
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(25),
+            padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
-              color: Color(0xFFEEEEEE),
+              color: const Color(0xFFEEEEEE),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "New day Workouts",
                   style: TextStyle(
                     fontSize: 20,
@@ -176,19 +129,17 @@ class NotificationScreen extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: 10),
-
-                Text(
+                const SizedBox(height: 10),
+                const Text(
                   "Todays Workouts",
                   style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
-                SizedBox(height: 5),
-
+                const SizedBox(height: 5),
                 InkWell(
                   onTap: () {
                     print("Link clicked");
                   },
-                  child: Text(
+                  child: const Text(
                     "click here",
                     style: TextStyle(
                       fontSize: 16,
@@ -197,9 +148,8 @@ class NotificationScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
-
-                Text(
+                const SizedBox(height: 10),
+                const Text(
                   "12/14/2025, 4:39:30 PM",
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
