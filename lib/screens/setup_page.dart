@@ -1,18 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // REQUIRED
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_project/main.dart';
+import 'package:mobile_project/providers.dart'; // Import providers
 import 'package:mobile_project/services/workout_ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'workout_page.dart';
 
-class SetupPage extends StatefulWidget {
-  final Function(bool) toggleTheme;
-  const SetupPage({super.key, required this.toggleTheme});
+// Changed to ConsumerStatefulWidget to access Riverpod
+class SetupPage extends ConsumerStatefulWidget {
+  // Removed 'toggleTheme' from constructor
+  const SetupPage({super.key});
 
   @override
-  State<SetupPage> createState() => _SetupPageState();
+  ConsumerState<SetupPage> createState() => _SetupPageState();
 }
 
-class _SetupPageState extends State<SetupPage> {
+class _SetupPageState extends ConsumerState<SetupPage> {
   int step = 0;
   bool isLoading = false;
 
@@ -22,6 +26,32 @@ class _SetupPageState extends State<SetupPage> {
 
   String availability = '';
   String goal = '';
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Image picked: ${image.name}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   void next() {
     if (step < 3) setState(() => step++);
@@ -48,7 +78,7 @@ class _SetupPageState extends State<SetupPage> {
       await prefs.setString('availability', availability);
       await prefs.setString('goal', goal);
 
-      final plan = await WorkoutAIService.generateWeeklyPlan(
+      final plan = await WorkoutGeminiAIService.generateWeeklyPlan(
         age: age,
         weight: weight,
         height: height,
@@ -60,19 +90,21 @@ class _SetupPageState extends State<SetupPage> {
         await prefs.setStringList(
           'workout_${day.day}',
           day.exercises
-            .map((e) =>
-                '${e.name}|${e.minutes}|${e.caloriesPerMinute}|${e.gifKey}')
-            .toList(),
+              .map((e) =>
+                  '${e.name}|${e.minutes}|${e.caloriesPerMinute}|${e.gifKey}')
+              .toList(),
         );
       }
 
       if (!mounted) return;
       await prefs.setBool('setupDone', true);
 
+      // --- FIX IS HERE ---
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => MainLayout(toggleTheme: widget.toggleTheme),
+          // MainLayout no longer takes arguments!
+          builder: (_) => const MainLayout(), 
         ),
       );
     } catch (e) {
@@ -166,14 +198,32 @@ class _SetupPageState extends State<SetupPage> {
   }
 
   Widget _inputStep(Color textColor, Color fieldColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _title('About You'),
-        _field('Age', ageCtrl, fieldColor, textColor),
-        _field('Weight (kg)', weightCtrl, fieldColor, textColor),
-        _field('Height (cm)', heightCtrl, fieldColor, textColor),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _title('About You'),
+          _field('Age', ageCtrl, fieldColor, textColor),
+          _field('Weight (kg)', weightCtrl, fieldColor, textColor),
+          _field('Height (cm)', heightCtrl, fieldColor, textColor),
+          
+          const SizedBox(height: 15),
+          Center(
+            child: TextButton.icon(
+              onPressed: _pickImage,
+              icon: Icon(Icons.image, color: textColor),
+              label: Text(
+                'Import from Image',
+                style: TextStyle(
+                  color: textColor,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+        ],
+      ),
     );
   }
 

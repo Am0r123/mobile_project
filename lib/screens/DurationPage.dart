@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project/screens/PAY.dart';
+import 'PAY.dart';
 
 class DurationPage extends StatelessWidget {
   final String planName;
@@ -34,21 +34,23 @@ class DurationPage extends StatelessWidget {
               style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 24),
-
             Expanded(
               child: ListView(
-                children: const [
+                children: [
                   DurationCard(
                     duration: '3 Months',
                     price: '\$30 / Month',
+                    planName: planName,
                   ),
                   DurationCard(
                     duration: '6 Months',
                     price: '\$50 / Month',
+                    planName: planName,
                   ),
                   DurationCard(
                     duration: '12 Months',
                     price: '\$80 / Month',
+                    planName: planName,
                   ),
                 ],
               ),
@@ -60,16 +62,16 @@ class DurationPage extends StatelessWidget {
   }
 }
 
-// ================= DURATION CARD =================
-
 class DurationCard extends StatelessWidget {
   final String duration;
   final String price;
+  final String planName;
 
   const DurationCard({
     super.key,
     required this.duration,
     required this.price,
+    required this.planName,
   });
 
   @override
@@ -106,7 +108,6 @@ class DurationCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -121,7 +122,12 @@ class DurationCard extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PaymentPage()),
+                  MaterialPageRoute(
+                    builder: (context) => PaymentPage(
+                      planName: planName,
+                      duration: duration,
+                    ),
+                  ),
                 );
               },
               child: const Text(

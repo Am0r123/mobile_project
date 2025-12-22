@@ -1,61 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project/screens/AboutUS.dart';
-import 'package:mobile_project/screens/notfication.dart';
-import 'package:mobile_project/screens/shop.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/AboutUS.dart';
+import 'screens/notfication.dart';
+import 'screens/shop.dart';
 import 'screens/setup_page.dart';
 import 'screens/trainers_page.dart';
 import 'screens/workout_page.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:mobile_project/screens/Login.dart';
+import 'screens/Login.dart';
 import 'screens/plans_page.dart';
 import 'screens/ContactPage.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
   await Supabase.initialize(
     url: 'https://cueajqxtidewvduxjlvi.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1ZWFqcXh0aWRld3ZkdXhqbHZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MTE0MjMsImV4cCI6MjA4MTI4NzQyM30._454zHSeliyJPzb43dUySzXlPRjWBsVvo6qkdhJDv8I',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1ZWFqcXh0aWRld3ZkdXhqbHZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MTE0MjMsImV4cCI6MjA4MTI4NzQyM30._454zHSeliyJPzb43dUySzXlPRjWBsVvo6qkdhJDv8I',
   );
-  runApp(const MainApp());
+
+  runApp(const ProviderScope(child: MainApp()));
 }
 
-/* ============================= APP ============================= */
-
-class MainApp extends StatefulWidget {
+class MainApp extends ConsumerWidget {
   const MainApp({super.key});
-
-  @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool('isDarkMode') ?? false;
-    setState(() {
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
-  void toggleTheme(bool isDark) async {
-    setState(() {
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', isDark);
-  }
 
   Future<bool> _isSetupDone() async {
     final prefs = await SharedPreferences.getInstance();
@@ -63,7 +34,10 @@ class _MainAppState extends State<MainApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 2. WATCH THEME PROVIDER
+    final currentThemeMode = ref.watch(themeProvider);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Fitness App',
@@ -84,7 +58,7 @@ class _MainAppState extends State<MainApp> {
           foregroundColor: Colors.white,
         ),
       ),
-      themeMode: _themeMode,
+      themeMode: currentThemeMode, // Use state from Riverpod
       home: FutureBuilder<bool>(
         future: _isSetupDone(),
         builder: (context, snapshot) {
@@ -94,13 +68,12 @@ class _MainAppState extends State<MainApp> {
             );
           }
 
+          // If setup not done, show SetupPage
           if (!(snapshot.data ?? false)) {
-            return SetupPage(
-              toggleTheme: toggleTheme,
-            );
+            return const SetupPage(); // No arguments needed now!
           }
 
-          return MainLayout(toggleTheme: toggleTheme);
+          return const MainLayout();
         },
       ),
     );
@@ -109,54 +82,34 @@ class _MainAppState extends State<MainApp> {
 
 /* ============================= MAIN LAYOUT ============================= */
 
-class MainLayout extends StatefulWidget {
-  final Function(bool) toggleTheme;
-  const MainLayout({super.key, required this.toggleTheme});
+class MainLayout extends ConsumerStatefulWidget {
+  const MainLayout({super.key});
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends ConsumerState<MainLayout> {
   int _selectedIndex = 0;
-  late final List<Widget> _pages;
-
-  final List<String> _titles = [
-    'Home',
-    'Trainers',
-    'Dashboard',
-    'Plans',
-    'Shop',
-    'Contact Us',
-    'About Us',
-    'Notification',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      HomePage(toggleTheme: () {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        widget.toggleTheme(!isDark);
-      }),
-      TrainersPage(),
-      WorkoutPage(),
-      PlansPage(),
-      SupplementsPage(),
-      ContactPage(),
-      AboutUsPage(),
-      NotificationPage(),
-    ];
-  }
-
-  void _onSelectPage(int index) {
-    setState(() => _selectedIndex = index);
-    Navigator.pop(context);
-  }
+  List<Widget> _pages = [];
+  List<String> _titles = [];
 
   @override
   Widget build(BuildContext context) {
+    // 3. WATCH SUBSCRIPTION PROVIDER
+    // This automatically rebuilds when permissions change!
+    final subState = ref.watch(subscriptionProvider);
+
+    if (subState.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Build pages based on provider state
+    _buildPages(subState.showDashboard, subState.showTrainers);
+
+    // Safety check
+    if (_selectedIndex >= _pages.length) _selectedIndex = 0;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -165,7 +118,9 @@ class _MainLayoutState extends State<MainLayout> {
         actions: [
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () => widget.toggleTheme(!isDark),
+            onPressed: () {
+              ref.read(themeProvider.notifier).toggleTheme(!isDark);
+            },
           ),
         ],
       ),
@@ -186,47 +141,19 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                 ),
               ),
-              _DrawerItem(
-                  icon: Icons.home,
-                  title: 'Home',
-                  isActive: _selectedIndex == 0,
-                  onTap: () => _onSelectPage(0)),
-              _DrawerItem(
-                  icon: Icons.people,
-                  title: 'Trainers',
-                  isActive: _selectedIndex == 1,
-                  onTap: () => _onSelectPage(1)),
-              _DrawerItem(
-                  icon: Icons.dashboard,
-                  title: 'Dashboard',
-                  isActive: _selectedIndex == 2,
-                  onTap: () => _onSelectPage(2)),
-              _DrawerItem(
-                  icon: Icons.fitness_center,
-                  title: 'Plans',
-                  isActive: _selectedIndex == 3,
-                  onTap: () => _onSelectPage(3)),
-              _DrawerItem(
-                  icon: Icons.shopping_bag,
-                  title: 'Shop',
-                  isActive: _selectedIndex == 4,
-                  onTap: () => _onSelectPage(4)),
-              _DrawerItem(
-                  icon: Icons.contact_mail,
-                  title: 'Contact Us',
-                  isActive: _selectedIndex == 5,
-                  onTap: () => _onSelectPage(5)),
-              _DrawerItem(
-                  icon: Icons.info,
-                  title: 'About Us',
-                  isActive: _selectedIndex == 6,
-                  onTap: () => _onSelectPage(6)),
-              _DrawerItem(
-                  icon: Icons.notifications,
-                  title: 'Notification',
-                  isActive: _selectedIndex == 7,
-                  onTap: () => _onSelectPage(7)),
-              const Spacer(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _titles.length,
+                  itemBuilder: (context, index) {
+                    return _DrawerItem(
+                      icon: _getIconForTitle(_titles[index]),
+                      title: _titles[index],
+                      isActive: _selectedIndex == index,
+                      onTap: () => _onSelectPage(index),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -234,16 +161,71 @@ class _MainLayoutState extends State<MainLayout> {
       body: _pages[_selectedIndex],
     );
   }
+
+  void _buildPages(bool showDashboard, bool showTrainers) {
+    _pages = [];
+    _titles = [];
+
+    // 1. Home
+    _pages.add(const HomePage());
+    _titles.add('Home');
+
+    // 2. Trainers (Controlled by Riverpod)
+    if (showTrainers) {
+      _pages.add(TrainersPage());
+      _titles.add('Trainers');
+    }
+
+    // 3. Dashboard (Controlled by Riverpod)
+    if (showDashboard) {
+      _pages.add(WorkoutPage());
+      _titles.add('Dashboard');
+    }
+
+    // 4. Standard Pages
+    _pages.add(PlansPage());
+    _titles.add('Plans');
+
+    _pages.add(SupplementsPage());
+    _titles.add('Shop');
+
+    _pages.add(ContactPage());
+    _titles.add('Contact Us');
+
+    _pages.add(AboutUsPage());
+    _titles.add('About Us');
+
+    _pages.add(NotificationPage());
+    _titles.add('Notification');
+  }
+
+  void _onSelectPage(int index) {
+    setState(() => _selectedIndex = index);
+    Navigator.pop(context);
+  }
+
+  IconData _getIconForTitle(String title) {
+    switch (title) {
+      case 'Home': return Icons.home;
+      case 'Trainers': return Icons.people;
+      case 'Dashboard': return Icons.dashboard;
+      case 'Plans': return Icons.fitness_center;
+      case 'Shop': return Icons.shopping_bag;
+      case 'Contact Us': return Icons.contact_mail;
+      case 'About Us': return Icons.info;
+      case 'Notification': return Icons.notifications;
+      default: return Icons.circle;
+    }
+  }
 }
 
 /* ============================= HOME PAGE ============================= */
 
-class HomePage extends StatelessWidget {
-  final VoidCallback toggleTheme;
-  const HomePage({super.key, required this.toggleTheme});
+class HomePage extends ConsumerWidget {
+  const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         Container(
@@ -309,11 +291,12 @@ class HomePage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        // --- UPDATED NAVIGATION ---
+                        // Removed 'toggleTheme' argument
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                LoginPage(toggleTheme: toggleTheme),
+                            builder: (_) => const LoginPage(), 
                           ),
                         );
                       },
@@ -324,11 +307,12 @@ class HomePage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                         // --- UPDATED NAVIGATION ---
+                        // Removed 'toggleTheme' argument
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                LoginPage(toggleTheme: toggleTheme),
+                            builder: (_) => const LoginPage(),
                           ),
                         );
                       },

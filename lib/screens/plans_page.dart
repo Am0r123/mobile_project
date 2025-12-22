@@ -132,8 +132,7 @@ class PlanCard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                   builder: (_) => DurationPage(planName: title),
-
+                    builder: (_) => DurationPage(planName: title),
                   ),
                 );
               },

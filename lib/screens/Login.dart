@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Import Riverpod
 import 'package:mobile_project/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'notfication.dart';
+import '../providers.dart'; // Import your providers
 
-class LoginPage extends StatefulWidget {
-  final VoidCallback toggleTheme;
-
-  const LoginPage({super.key, required this.toggleTheme});
+// 1. Convert to ConsumerStatefulWidget to access 'ref'
+class LoginPage extends ConsumerStatefulWidget {
+  // Removed 'toggleTheme' from constructor
+  const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
@@ -24,18 +25,28 @@ class _LoginPageState extends State<LoginPage> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
       if (response.user != null) {
+        // 2. CRITICAL: Refresh the subscription provider!
+        // This ensures the app checks if they are Pro/Nutrition immediately after login
+        await ref.read(subscriptionProvider.notifier).refresh();
+
+        if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => MainLayout(toggleTheme: (_) => widget.toggleTheme()),
+            // 3. Update Navigation: MainLayout no longer needs arguments
+            builder: (_) => const MainLayout(),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -51,10 +62,10 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              const Text(
                 "SIGN IN",
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -90,8 +101,8 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        SignUpPage(toggleTheme: widget.toggleTheme),
+                    // 4. Update Navigation: SignUpPage no longer needs arguments
+                    builder: (_) => const SignUpPage(),
                   ),
                 ),
                 child: const Text(
@@ -108,12 +119,11 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key, required this.toggleTheme});
-
-  final VoidCallback toggleTheme;
+  // Removed 'toggleTheme' from constructor
+  const SignUpPage({super.key});
 
   @override
-  _SignUpPageState createState() => _SignUpPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
 class _SignUpPageState extends State<SignUpPage> {
@@ -129,15 +139,18 @@ class _SignUpPageState extends State<SignUpPage> {
         password: passwordController.text.trim(),
       );
       if (response.user != null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created! Please login.')),
         );
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
