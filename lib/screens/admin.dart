@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // ----------------------------------------------------
-  // TODO: PASTE YOUR KEY AND URL HERE BEFORE RUNNING
-  // ----------------------------------------------------
-  // await Supabase.initialize(
-  //  url: 'YOUR_SUPABASE_URL',
-  //  anonKey: 'YOUR_SUPABASE_ANON_KEY',
-  // );
-
-  runApp(const AdminApp());
-}
-
 class AdminApp extends StatelessWidget {
   const AdminApp({super.key});
 
@@ -49,7 +35,6 @@ class DashboardHome extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               "Quick Actions",
@@ -62,29 +47,36 @@ class DashboardHome extends StatelessWidget {
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
                 children: [
+                  // 1. ADD USER
                   _DashboardCard(
-                    icon: Icons.person_add,
-                    title: "Add New User",
-                    color: Colors.blueAccent,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddUserPage())),
+                    icon: Icons.person_add, 
+                    title: "Add New User", 
+                    color: Colors.blueAccent, 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddUserPage()))
                   ),
+                  
+                  // 2. VIEW USERS
                   _DashboardCard(
-                    icon: Icons.list_alt,
-                    title: "View Users",
-                    color: Colors.orangeAccent,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserListScreen(mode: UserListMode.view))),
+                    icon: Icons.list_alt, 
+                    title: "View Users", 
+                    color: Colors.orangeAccent, 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ViewUsersPage()))
                   ),
+                  
+                  // 3. EDIT USERS (Select to Edit)
                   _DashboardCard(
-                    icon: Icons.edit,
-                    title: "Edit User",
-                    color: Colors.green,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserListScreen(mode: UserListMode.edit))),
+                    icon: Icons.edit, 
+                    title: "Edit User", 
+                    color: Colors.green, 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditUsersListPage()))
                   ),
+                  
+                  // 4. REMOVE USERS (Select to Delete)
                   _DashboardCard(
-                    icon: Icons.delete_forever,
-                    title: "Remove User",
-                    color: Colors.redAccent,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserListScreen(mode: UserListMode.delete))),
+                    icon: Icons.delete_forever, 
+                    title: "Remove User", 
+                    color: Colors.redAccent, 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteUsersListPage()))
                   ),
                 ],
               ),
@@ -101,7 +93,6 @@ class _DashboardCard extends StatelessWidget {
   final String title;
   final Color color;
   final VoidCallback onTap;
-
   const _DashboardCard({required this.icon, required this.title, required this.color, required this.onTap});
 
   @override
@@ -110,19 +101,12 @@ class _DashboardCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(radius: 30, backgroundColor: color.withOpacity(0.1), child: Icon(icon, size: 30, color: color)),
-            const SizedBox(height: 15),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-          ],
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))]),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          CircleAvatar(radius: 30, backgroundColor: color.withOpacity(0.1), child: Icon(icon, size: 30, color: color)),
+          const SizedBox(height: 15),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ]),
       ),
     );
   }
@@ -155,7 +139,6 @@ class _AddUserPageState extends State<AddUserPage> {
         password: passwordController.text,
       );
 
-      // Insert into public table (Sync)
       if (authResponse.user != null) {
         await Supabase.instance.client.from('users').insert({
           'id': authResponse.user!.id,
@@ -205,23 +188,17 @@ class _AddUserPageState extends State<AddUserPage> {
 }
 
 // ==========================================================
-// 3. MASTER USER LIST SCREEN (With HARD DELETE Logic)
+// 3. VIEW USERS PAGE (Read Only List)
 // ==========================================================
-
-enum UserListMode { view, edit, delete }
-
-class UserListScreen extends StatefulWidget {
-  final UserListMode mode;
-  const UserListScreen({super.key, required this.mode});
-
+class ViewUsersPage extends StatefulWidget {
+  const ViewUsersPage({super.key});
   @override
-  _UserListScreenState createState() => _UserListScreenState();
+  _ViewUsersPageState createState() => _ViewUsersPageState();
 }
 
-class _UserListScreenState extends State<UserListScreen> {
+class _ViewUsersPageState extends State<ViewUsersPage> {
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -231,42 +208,129 @@ class _UserListScreenState extends State<UserListScreen> {
 
   Future<void> _fetchUsers() async {
     if (!mounted) return;
-    setState(() { _isLoading = true; _errorMessage = null; });
-
+    setState(() => _isLoading = true);
     try {
-      final data = await Supabase.instance.client
-          .from('users')
-          .select()
-          .order('name', ascending: true);
-
-      if (mounted) {
-        setState(() {
-          _users = List<Map<String, dynamic>>.from(data);
-          _isLoading = false;
-        });
-      }
+      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
+      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = "Failed to load users: $e";
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _handleUserTap(Map<String, dynamic> user) async {
-    if (widget.mode == UserListMode.edit) {
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserPage(user: user)));
-      if (mounted) _fetchUsers();
-    } else if (widget.mode == UserListMode.delete) {
-      _showDeleteDialog(user);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("View Users"), backgroundColor: Colors.orangeAccent),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : ListView.builder(
+            itemCount: _users.length,
+            padding: const EdgeInsets.all(10),
+            itemBuilder: (context, index) {
+              final user = _users[index];
+              return Card(
+                child: ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                  title: Text(user['name'] ?? 'Unknown'),
+                  subtitle: Text(user['email'] ?? 'No Email'),
+                ),
+              );
+            },
+          ),
+    );
+  }
+}
+
+// ==========================================================
+// 4. EDIT USERS LIST PAGE (Select to Edit)
+// ==========================================================
+class EditUsersListPage extends StatefulWidget {
+  const EditUsersListPage({super.key});
+  @override
+  _EditUsersListPageState createState() => _EditUsersListPageState();
+}
+
+class _EditUsersListPageState extends State<EditUsersListPage> {
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
+      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // -------------------------------------------------------------
-  // UPDATE: USES RPC FUNCTION FOR HARD DELETE
-  // -------------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Select User to Edit"), backgroundColor: Colors.green),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : ListView.builder(
+            itemCount: _users.length,
+            padding: const EdgeInsets.all(10),
+            itemBuilder: (context, index) {
+              final user = _users[index];
+              return Card(
+                child: ListTile(
+                  title: Text(user['name'] ?? 'Unknown'),
+                  subtitle: Text(user['email'] ?? 'No Email'),
+                  trailing: const Icon(Icons.edit, color: Colors.green),
+                  onTap: () async {
+                    // Go to Edit Form Page
+                    await Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserForm(user: user)));
+                    // Refresh when we come back
+                    _fetchUsers();
+                  },
+                ),
+              );
+            },
+          ),
+    );
+  }
+}
+
+// ==========================================================
+// 5. DELETE USERS LIST PAGE (Select to Delete)
+// ==========================================================
+class DeleteUsersListPage extends StatefulWidget {
+  const DeleteUsersListPage({super.key});
+  @override
+  _DeleteUsersListPageState createState() => _DeleteUsersListPageState();
+}
+
+class _DeleteUsersListPageState extends State<DeleteUsersListPage> {
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
+      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   void _showDeleteDialog(Map<String, dynamic> user) {
     showDialog(
       context: context,
@@ -279,19 +343,17 @@ class _UserListScreenState extends State<UserListScreen> {
             onPressed: () async {
               Navigator.pop(dialogContext); // Close dialog
               try {
-                // CALL THE SQL FUNCTION
+                // Call SQL function for hard delete
                 await Supabase.instance.client.rpc('admin_delete_user', params: {
                   'target_user_id': user['id']
                 });
 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User Hard Deleted!")));
-                  _fetchUsers();
+                  _fetchUsers(); // Refresh list
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-                }
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
               }
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
@@ -303,58 +365,41 @@ class _UserListScreenState extends State<UserListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String title = "All Users";
-    Color themeColor = Colors.indigo;
-    if (widget.mode == UserListMode.edit) { title = "Select User to Edit"; themeColor = Colors.green; }
-    if (widget.mode == UserListMode.delete) { title = "Select User to Remove"; themeColor = Colors.redAccent; }
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: themeColor,
-        actions: [IconButton(onPressed: _fetchUsers, icon: const Icon(Icons.refresh))],
-      ),
-      body: _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : _errorMessage != null
-            ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
-            : ListView.builder(
-                itemCount: _users.length,
-                padding: const EdgeInsets.all(10),
-                itemBuilder: (context, index) {
-                  final user = _users[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: themeColor.withOpacity(0.2),
-                        child: Text((user['name'] ?? 'U')[0].toUpperCase(), style: TextStyle(color: themeColor)),
-                      ),
-                      title: Text(user['name'] ?? 'Unknown'),
-                      subtitle: Text(user['email'] ?? 'No Email'),
-                      trailing: widget.mode == UserListMode.view
-                        ? null
-                        : Icon(widget.mode == UserListMode.delete ? Icons.delete : Icons.edit, color: themeColor),
-                      onTap: () => _handleUserTap(user),
-                    ),
-                  );
-                },
-              ),
+      appBar: AppBar(title: const Text("Select User to Remove"), backgroundColor: Colors.redAccent),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : ListView.builder(
+            itemCount: _users.length,
+            padding: const EdgeInsets.all(10),
+            itemBuilder: (context, index) {
+              final user = _users[index];
+              return Card(
+                child: ListTile(
+                  title: Text(user['name'] ?? 'Unknown'),
+                  subtitle: Text(user['email'] ?? 'No Email'),
+                  trailing: const Icon(Icons.delete, color: Colors.red),
+                  onTap: () => _showDeleteDialog(user),
+                ),
+              );
+            },
+          ),
     );
   }
 }
 
 // ==========================================================
-// 4. EDIT USER FORM PAGE (With HARD EDIT Logic)
+// 6. EDIT USER FORM (The actual edit screen)
 // ==========================================================
-class EditUserPage extends StatefulWidget {
+class EditUserForm extends StatefulWidget {
   final Map<String, dynamic> user;
-  const EditUserPage({super.key, required this.user});
+  const EditUserForm({super.key, required this.user});
 
   @override
-  _EditUserPageState createState() => _EditUserPageState();
+  _EditUserFormState createState() => _EditUserFormState();
 }
 
-class _EditUserPageState extends State<EditUserPage> {
+class _EditUserFormState extends State<EditUserForm> {
   late TextEditingController nameController;
   late TextEditingController emailController;
   bool isLoading = false;
@@ -366,13 +411,10 @@ class _EditUserPageState extends State<EditUserPage> {
     emailController = TextEditingController(text: widget.user['email']);
   }
 
-  // -------------------------------------------------------------
-  // UPDATE: USES RPC FUNCTION FOR HARD EDIT
-  // -------------------------------------------------------------
   Future<void> updateUser() async {
     setState(() => isLoading = true);
     try {
-      // CALL THE SQL FUNCTION
+      // Call SQL function for hard edit
       await Supabase.instance.client.rpc('admin_update_user', params: {
         'target_user_id': widget.user['id'],
         'new_email': emailController.text.trim(),
@@ -393,7 +435,7 @@ class _EditUserPageState extends State<EditUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Update User"), backgroundColor: Colors.green),
+      appBar: AppBar(title: const Text("Update User Details"), backgroundColor: Colors.green),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
