@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'DurationPage.dart';
 
-
-class PlansPage extends StatelessWidget {
+class PlansPage extends ConsumerWidget {
   const PlansPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final appBarColor = isDark ? Colors.black : Colors.white;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Our Plans'),
+        backgroundColor: appBarColor,
+        title: Text(
+          'Our Plans',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: const [
@@ -50,8 +59,7 @@ class PlansPage extends StatelessWidget {
   }
 }
 
-
-class PlanCard extends StatelessWidget {
+class PlanCard extends ConsumerWidget {
   final String title;
   final List<String> features;
 
@@ -62,18 +70,29 @@ class PlanCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1C1C1C) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey[400] : Colors.grey[700];
+    final borderColor = isDark ? Colors.white10 : Colors.grey[300]!;
+    final shadowColor = isDark ? Colors.transparent : Colors.black12;
+
     return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(20),
+      width: 290,
+      margin: const EdgeInsets.only(right: 20, bottom: 20, top: 10),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFD6FF3F),
-          width: 1.5,
-        ),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,51 +100,60 @@ class PlanCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: const Color(0xFFD6FF3F),
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: TextStyle(
+                              color: subTextColor,
+                              fontSize: 16,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).toList(),
+              ),
             ),
           ),
 
           const SizedBox(height: 20),
 
-          ...features.map(
-            (feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.check_circle,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      feature,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
           SizedBox(
             width: double.infinity,
+            height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD6FF3F),
-                foregroundColor: const Color.fromARGB(255, 0, 0, 0),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
               onPressed: () {
@@ -138,7 +166,7 @@ class PlanCard extends StatelessWidget {
               },
               child: const Text(
                 'Apply Now',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ),

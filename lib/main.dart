@@ -25,8 +25,21 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MainApp()));
 }
 
-class MainApp extends ConsumerWidget {
+class MainApp extends ConsumerStatefulWidget {
   const MainApp({super.key});
+
+  @override
+  ConsumerState<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends ConsumerState<MainApp> {
+  late Future<bool> _setupFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupFuture = _isSetupDone();
+  }
 
   Future<bool> _isSetupDone() async {
     final prefs = await SharedPreferences.getInstance();
@@ -34,8 +47,7 @@ class MainApp extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // 2. WATCH THEME PROVIDER
+  Widget build(BuildContext context) {
     final currentThemeMode = ref.watch(themeProvider);
 
     return MaterialApp(
@@ -43,11 +55,14 @@ class MainApp extends ConsumerWidget {
       title: 'Fitness App',
       theme: ThemeData(
         primarySwatch: Colors.red,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
         ),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       darkTheme: ThemeData(
         primarySwatch: Colors.red,
@@ -56,11 +71,13 @@ class MainApp extends ConsumerWidget {
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
+          elevation: 0,
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      themeMode: currentThemeMode, // Use state from Riverpod
+      themeMode: currentThemeMode,
       home: FutureBuilder<bool>(
-        future: _isSetupDone(),
+        future: _setupFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
@@ -68,9 +85,8 @@ class MainApp extends ConsumerWidget {
             );
           }
 
-          // If setup not done, show SetupPage
           if (!(snapshot.data ?? false)) {
-            return const SetupPage(); // No arguments needed now!
+            return const SetupPage();
           }
 
           return const MainLayout();
@@ -96,21 +112,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    // 3. WATCH SUBSCRIPTION PROVIDER
-    // This automatically rebuilds when permissions change!
     final subState = ref.watch(subscriptionProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (subState.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Build pages based on provider state
     _buildPages(subState.showDashboard, subState.showTrainers);
 
-    // Safety check
     if (_selectedIndex >= _pages.length) _selectedIndex = 0;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -166,23 +177,19 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     _pages = [];
     _titles = [];
 
-    // 1. Home
     _pages.add(const HomePage());
     _titles.add('Home');
 
-    // 2. Trainers (Controlled by Riverpod)
     if (showTrainers) {
       _pages.add(TrainersPage());
       _titles.add('Trainers');
     }
 
-    // 3. Dashboard (Controlled by Riverpod)
     if (showDashboard) {
       _pages.add(WorkoutPage());
       _titles.add('Dashboard');
     }
 
-    // 4. Standard Pages
     _pages.add(PlansPage());
     _titles.add('Plans');
 
@@ -226,13 +233,17 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : Colors.black87;
+    final subTitleColor = isDark ? Colors.white70 : Colors.black54;
     return Stack(
       children: [
         Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(
-                  'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=700&auto=format&fit=crop&q=60'),
+              image: isDark 
+                  ? const NetworkImage('https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=700&auto=format&fit=crop&q=60')
+                  : const AssetImage('assets/images/lightModebg.jpg') as ImageProvider,
               fit: BoxFit.cover,
             ),
           ),
@@ -242,10 +253,18 @@ class HomePage extends ConsumerWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.3),
-                Colors.black.withOpacity(0.9),
-              ],
+              stops: const [0.0, 0.5, 1.0], 
+              colors: isDark 
+                ? [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.5),
+                    Colors.black.withOpacity(0.95),
+                  ]
+                : [
+                    Colors.transparent,
+                    Colors.white.withOpacity(0.4),
+                    Colors.white.withOpacity(0.95),
+                  ],
             ),
           ),
         ),
@@ -255,35 +274,45 @@ class HomePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(),
-              const Text(
+              Text(
                 'NO MORE EXCUSES |',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: titleColor, 
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 2,
+                      color: isDark ? Colors.black45 : Colors.white54,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD6FF3F),
+                  color: const Color(0xFFD6FF3F), 
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
                   'DO IT NOW',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Colors.black, 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
+              Text(
                 'Achieve your fitness goals with our expert trainers!',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                    color: subTitleColor, 
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600
+                ),
               ),
               const SizedBox(height: 30),
               Row(
@@ -291,15 +320,15 @@ class HomePage extends ConsumerWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // --- UPDATED NAVIGATION ---
-                        // Removed 'toggleTheme' argument
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginPage(), 
-                          ),
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
                         );
                       },
+                      style: isDark ? null : ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white
+                      ),
                       child: const Text('SIGN IN'),
                     ),
                   ),
@@ -307,13 +336,9 @@ class HomePage extends ConsumerWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                         // --- UPDATED NAVIGATION ---
-                        // Removed 'toggleTheme' argument
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginPage(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
