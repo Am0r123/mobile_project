@@ -12,7 +12,7 @@ import 'screens/workout_page.dart';
 import 'screens/Login.dart';
 import 'screens/plans_page.dart';
 import 'screens/ContactPage.dart';
-import 'providers.dart';
+import 'providers/providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -187,7 +187,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
     if (showDashboard) {
       _pages.add(WorkoutPage());
-      _titles.add('Dashboard');
+      _titles.add('Workout');
     }
 
     _pages.add(PlansPage());
@@ -215,7 +215,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     switch (title) {
       case 'Home': return Icons.home;
       case 'Trainers': return Icons.people;
-      case 'Dashboard': return Icons.dashboard;
+      case 'Workout': return Icons.dashboard;
       case 'Plans': return Icons.fitness_center;
       case 'Shop': return Icons.shopping_bag;
       case 'Contact Us': return Icons.contact_mail;
@@ -255,19 +255,12 @@ class HomePage extends ConsumerWidget {
               end: Alignment.bottomCenter,
               stops: const [0.0, 0.5, 1.0], 
               colors: isDark 
-                ? [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.95),
-                  ]
-                : [
-                    Colors.transparent,
-                    Colors.white.withOpacity(0.4),
-                    Colors.white.withOpacity(0.95),
-                  ],
+                ? [Colors.transparent, Colors.black.withOpacity(0.5), Colors.black.withOpacity(0.95)]
+                : [Colors.transparent, Colors.white.withOpacity(0.4), Colors.white.withOpacity(0.95)],
             ),
           ),
         ),
+        
         Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -280,13 +273,7 @@ class HomePage extends ConsumerWidget {
                   color: titleColor, 
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      offset: const Offset(0, 1),
-                      blurRadius: 2,
-                      color: isDark ? Colors.black45 : Colors.white54,
-                    ),
-                  ],
+                  shadows: [Shadow(offset: const Offset(0, 1), blurRadius: 2, color: isDark ? Colors.black45 : Colors.white54)],
                 ),
               ),
               const SizedBox(height: 8),
@@ -298,57 +285,51 @@ class HomePage extends ConsumerWidget {
                 ),
                 child: const Text(
                   'DO IT NOW',
-                  style: TextStyle(
-                    color: Colors.black, 
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 14),
               Text(
                 'Achieve your fitness goals with our expert trainers!',
-                style: TextStyle(
-                    color: subTitleColor, 
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600
-                ),
+                style: TextStyle(color: subTitleColor, fontSize: 15, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 30),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                        );
-                      },
-                      style: isDark ? null : ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white
-                      ),
-                      child: const Text('SIGN IN'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD6FF3F),
-                        foregroundColor: Colors.black,
-                      ),
-                      child: const Text('SIGN UP'),
-                    ),
-                  ),
-                ],
+              StreamBuilder<AuthState>(
+                stream: Supabase.instance.client.auth.onAuthStateChange,
+                builder: (context, snapshot) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  final isLoggedIn = session != null;
+                  if (!isLoggedIn) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+                            },
+                            style: isDark ? null : ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                            child: const Text('SIGN IN'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD6FF3F), foregroundColor: Colors.black),
+                            child: const Text('SIGN UP'),
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Text(
+                      "Welcome back!",
+                      style: TextStyle(color: titleColor, fontSize: 20, fontWeight: FontWeight.bold),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 40),
             ],

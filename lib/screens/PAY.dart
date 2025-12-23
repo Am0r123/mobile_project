@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // REQUIRED IMPORT
+import 'package:flutter_riverpod/flutter_riverpod.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
-import '../providers.dart'; // Import providers
+import '../providers/providers.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   final String planName;
@@ -36,17 +36,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     setState(() => isSaving = true);
 
     try {
-      // 1. Simulate Delay
       await Future.delayed(const Duration(seconds: 2));
 
-      // 2. Save Data
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_plan', widget.planName);
       await prefs.setString('plan_duration', widget.duration);
       await prefs.setBool('is_subscribed', true);
 
-      // 3. TRIGGER RIVERPOD REFRESH
-      // This tells MainLayout to re-check permissions immediately
       await ref.read(subscriptionProvider.notifier).refresh();
 
       if (!mounted) return;
@@ -58,7 +54,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         ),
       );
 
-      // 4. Navigate back to MainApp
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const MainApp()),
         (route) => false,
@@ -124,7 +119,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           color: Colors.indigo, thickness: 3, endIndent: 200),
                       const SizedBox(height: 20),
 
-                      // --- Summary ---
                       Text(
                         "Buying: ${widget.planName} Plan (${widget.duration})",
                         style: const TextStyle(
@@ -246,7 +240,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   }
 }
 
-// ... Keep CustomLabel, CounterSelector, and CardNumberFormatter the same ...
 class CustomLabel extends StatelessWidget {
   final String text;
   const CustomLabel({super.key, required this.text});

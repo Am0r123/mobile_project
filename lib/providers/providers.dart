@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// --- THEME PROVIDER ---
 class ThemeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _loadTheme();
-    return ThemeMode.system; // Default state
+    return ThemeMode.system;
   }
 
   Future<void> _loadTheme() async {
@@ -25,7 +24,6 @@ class ThemeNotifier extends Notifier<ThemeMode> {
 
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);
 
-// --- SUBSCRIPTION PROVIDER ---
 class SubscriptionState {
   final bool showDashboard;
   final bool showTrainers;
@@ -67,7 +65,6 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
     );
   }
 
-  // Call this to force a refresh after payment
   Future<void> refresh() async {
     state = SubscriptionState(isLoading: true, showDashboard: state.showDashboard, showTrainers: state.showTrainers);
     await _checkSubscription();
