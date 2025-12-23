@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import '../main.dart';
+import '../providers/providers.dart';
 
-void main() {
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: PaymentPage(),
-  ));
-}
+class PaymentPage extends ConsumerStatefulWidget {
+  final String planName;
+  final String duration;
 
-class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
+  const PaymentPage({
+    super.key,
+    required this.planName,
+    required this.duration,
+  });
 
   @override
-  State<PaymentPage> createState() => _PaymentPageState();
+  ConsumerState<PaymentPage> createState() => _PaymentPageState();
 }
 
-class _PaymentPageState extends State<PaymentPage> {
+class _PaymentPageState extends ConsumerState<PaymentPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController nameController = TextEditingController();
@@ -24,6 +28,46 @@ class _PaymentPageState extends State<PaymentPage> {
 
   int selectedMonth = 1;
   int selectedYear = 2026;
+  bool isSaving = false;
+
+  Future<void> _processPayment() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => isSaving = true);
+
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_plan', widget.planName);
+      await prefs.setString('plan_duration', widget.duration);
+      await prefs.setBool('is_subscribed', true);
+
+      await ref.read(subscriptionProvider.notifier).refresh();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Payment Successful! Plan Activated."),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainApp()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,53 +81,73 @@ class _PaymentPageState extends State<PaymentPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text("FGYM", style: TextStyle(color: Colors.red, fontSize: 28, fontWeight: FontWeight.bold)),
+        title: const Text("FGYM",
+            style: TextStyle(
+                color: Colors.red, fontSize: 28, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Stack(
         children: [
-          // 1. Background
           Positioned.fill(
             child: Image.network(
               'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop',
               fit: BoxFit.cover,
             ),
           ),
-          Positioned.fill(child: Container(color: Colors.black.withOpacity(0.6))),
+          Positioned.fill(
+              child: Container(color: Colors.black.withOpacity(0.6))),
 
-          // 2. Form Card
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Container(
                 padding: const EdgeInsets.all(25),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20)),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("PAYMENT", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-                      const Divider(color: Colors.indigo, thickness: 3, endIndent: 200),
+                      const Text("PAYMENT",
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black)),
+                      const Divider(
+                          color: Colors.indigo, thickness: 3, endIndent: 200),
                       const SizedBox(height: 20),
 
-                      // --- Name Field ---
+                      Text(
+                        "Buying: ${widget.planName} Plan (${widget.duration})",
+                        style: const TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 15),
+
                       const CustomLabel(text: "Name on Card"),
                       TextFormField(
                         controller: nameController,
                         style: const TextStyle(color: Colors.black),
-                        decoration: const InputDecoration(hintText: "Enter Name", border: OutlineInputBorder()),
-                        validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
+                        decoration: const InputDecoration(
+                            hintText: "Enter Name",
+                            border: OutlineInputBorder()),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? "Required"
+                            : null,
                       ),
                       const SizedBox(height: 15),
 
-                      // --- Card Number Field ---
                       const CustomLabel(text: "Credit Card Number"),
                       TextFormField(
                         controller: numberController,
                         keyboardType: TextInputType.number,
                         maxLength: 19,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, CardNumberFormatter()],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          CardNumberFormatter()
+                        ],
                         style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                           hintText: "1111-2222-3333-4444",
@@ -92,13 +156,13 @@ class _PaymentPageState extends State<PaymentPage> {
                           counterText: "",
                         ),
                         validator: (value) {
-                          if (value == null || value.length != 19) return "Invalid card number";
+                          if (value == null || value.length != 19)
+                            return "Invalid card number";
                           return null;
                         },
                       ),
                       const SizedBox(height: 15),
 
-                      // --- Date Selectors (Using Extracted Widget) ---
                       Row(
                         children: [
                           Expanded(
@@ -107,7 +171,8 @@ class _PaymentPageState extends State<PaymentPage> {
                               value: selectedMonth,
                               min: 1,
                               max: 12,
-                              onChanged: (val) => setState(() => selectedMonth = val),
+                              onChanged: (val) =>
+                                  setState(() => selectedMonth = val),
                             ),
                           ),
                           const SizedBox(width: 15),
@@ -117,14 +182,14 @@ class _PaymentPageState extends State<PaymentPage> {
                               value: selectedYear,
                               min: 2026,
                               max: 2040,
-                              onChanged: (val) => setState(() => selectedYear = val),
+                              onChanged: (val) =>
+                                  setState(() => selectedYear = val),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 15),
 
-                      // --- CVV Field ---
                       const CustomLabel(text: "CVV"),
                       TextFormField(
                         controller: cvvController,
@@ -132,42 +197,35 @@ class _PaymentPageState extends State<PaymentPage> {
                         obscureText: true,
                         maxLength: 3,
                         style: const TextStyle(color: Colors.black),
-                        decoration: const InputDecoration(hintText: "123", border: OutlineInputBorder(), counterText: ""),
-                        validator: (val) => (val == null || val.length != 3) ? "3 digits required" : null,
+                        decoration: const InputDecoration(
+                            hintText: "123",
+                            border: OutlineInputBorder(),
+                            counterText: ""),
+                        validator: (val) => (val == null || val.length != 3)
+                            ? "3 digits required"
+                            : null,
                       ),
                       const SizedBox(height: 20),
 
-                      // --- Pay Button ---
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C)),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              // 1. Show Processing Message
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Processing Payment..."),
-                                  duration: Duration(seconds: 2), 
-                                  backgroundColor: Colors.orange,
-                                ),
-                              );
-
-                              // 2. Wait 2 seconds, then show Completed Message
-                              Future.delayed(const Duration(seconds: 2), () {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Payment Completed Successfully!"),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                }
-                              });
-                            }
-                          },
-                          child: const Text("Pay Now", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFB71C1C)),
+                          onPressed: isSaving ? null : _processPayment,
+                          child: isSaving
+                              ? const SizedBox(
+                                  height: 25,
+                                  width: 25,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white),
+                                )
+                              : const Text("Pay Now",
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -182,28 +240,20 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 }
 
-// ==========================================
-//           EXTRACTED WIDGETS
-// ==========================================
-
-// 1. Simple Label Widget
 class CustomLabel extends StatelessWidget {
   final String text;
   const CustomLabel({super.key, required this.text});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-      ),
+      child: Text(text,
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: Colors.black)),
     );
   }
 }
 
-// 2. Counter Selector Widget
 class CounterSelector extends StatelessWidget {
   final String title;
   final int value;
@@ -225,7 +275,7 @@ class CounterSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CustomLabel(text: title), // Reuse our CustomLabel
+        CustomLabel(text: title),
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
@@ -240,7 +290,10 @@ class CounterSelector extends StatelessWidget {
               ),
               Text(
                 value.toString().padLeft(2, '0'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
               ),
               IconButton(
                 icon: const Icon(Icons.add, color: Colors.black),
@@ -254,13 +307,13 @@ class CounterSelector extends StatelessWidget {
   }
 }
 
-// 3. Card Formatter
 class CardNumberFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     String text = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (text.length > 16) text = text.substring(0, 16);
-    
+
     var buffer = StringBuffer();
     for (int i = 0; i < text.length; i++) {
       buffer.write(text[i]);

@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/workout_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-final apiKey = dotenv.env['OPENAI_API_KEY']!;
+final apiKey = dotenv.env['API_KEY']!;
 
-class WorkoutAIService {
+class WorkoutGeminiAIService {
   static final String _apiKey = apiKey;
-  static const String _apiUrl = 'https://api.openai.com/v1/chat/completions';
-
+  
+  static const String _apiUrl = 
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent';
   static Future<List<DailyWorkout>> generateWeeklyPlan({
     required int age,
     required double weight,
@@ -16,58 +17,41 @@ class WorkoutAIService {
     required String availability,
   }) async {
     final prompt = '''
-You are a professional fitness coach.
-
-Create a 7-day workout plan as JSON ONLY.
-User details:
-- Age: $age
-- Weight: $weight kg
-- Height: $height cm
-- Goal: $goal
-- Availability: $availability
-
-Rules:
-- Each day has 2–4 exercises
-- Each exercise must include:
-  - name
-  - minutes
-  - caloriesPerMinute
-  - gifKey (snake_case identifier)
-
-gifKey examples:
-push_up, squat, plank, jumping_jacks, lunges, jogging
-
-Respond with PURE JSON only.
-
-JSON format:
-[
-  {
-    "day": "Monday",
-    "exercises": [
-      {
-        "name": "Push Ups",
-        "minutes": 10,
-        "caloriesPerMinute": 7,
-        "gifKey": "push_up"
-      }
-    ]
-  }
-]
-''';
+      You are a professional fitness coach.
+      Create a 7-day workout plan as JSON ONLY.
+      User details: Age: $age, Weight: $weight kg, Height: $height cm, Goal: $goal, Availability: $availability
+      
+      Rules:
+      - Each day has 2–4 exercises
+      - Each exercise must include: name, minutes, caloriesPerMinute, gifKey (snake_case)
+      - gifKey examples: push_up, squat, plank, jumping_jacks, lunges, jogging
+      
+      Respond with PURE JSON only. No markdown formatting.
+      JSON format example:
+      [
+        {
+          "day": "Monday",
+          "exercises": [
+            { "name": "Push Ups", "minutes": 10, "caloriesPerMinute": 7, "gifKey": "push_up" }
+          ]
+        }
+      ]
+    ''';
 
     final response = await http.post(
-      Uri.parse(_apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_apiKey',
-      },
+      Uri.parse('$_apiUrl?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'model': 'gpt-4o-mini',
-        'messages': [
-          {'role': 'system', 'content': 'You generate workout plans.'},
-          {'role': 'user', 'content': prompt},
+        "contents": [
+          {
+            "parts": [
+              {"text": prompt}
+            ]
+          }
         ],
-        'temperature': 0.6,
+        "generationConfig": {
+          "responseMimeType": "application/json"
+        }
       }),
     );
 
@@ -76,11 +60,10 @@ JSON format:
     }
 
     final data = jsonDecode(response.body);
-    String content = data['choices'][0]['message']['content'];
-    content = content.replaceAll('```json', '');
-    content = content.replaceAll('```', '');
-    content = content.trim();
-
+    
+    String content = data['candidates'][0]['content']['parts'][0]['text'];
+    
+    content = content.replaceAll('```json', '').replaceAll('```', '').trim();
 
     final List<dynamic> jsonPlan = jsonDecode(content);
 
@@ -91,7 +74,7 @@ JSON format:
           return Exercise(
             name: ex['name'],
             minutes: ex['minutes'],
-            caloriesPerMinute: ex['caloriesPerMinute'],
+            caloriesPerMinute: (ex['caloriesPerMinute'] as num).toInt(),
             gifKey: ex['gifKey'],
           );
         }).toList(),

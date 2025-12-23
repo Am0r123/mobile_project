@@ -1,54 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project/screens/PAY.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'PAY.dart';
 
-class DurationPage extends StatelessWidget {
+class DurationPage extends ConsumerWidget {
   final String planName;
 
   const DurationPage({super.key, required this.planName});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(planName),
+        title: Text(planName, style: TextStyle(color: textColor)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+             Text(
               'Our Duration',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Choose a plan that fits your fitness journey',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: subTextColor),
             ),
             const SizedBox(height: 24),
-
             Expanded(
               child: ListView(
-                children: const [
+                children: [
                   DurationCard(
                     duration: '3 Months',
                     price: '\$30 / Month',
+                    planName: planName,
                   ),
                   DurationCard(
                     duration: '6 Months',
                     price: '\$50 / Month',
+                    planName: planName,
                   ),
                   DurationCard(
                     duration: '12 Months',
                     price: '\$80 / Month',
+                    planName: planName,
                   ),
                 ],
               ),
@@ -60,38 +68,42 @@ class DurationPage extends StatelessWidget {
   }
 }
 
-// ================= DURATION CARD =================
-
-class DurationCard extends StatelessWidget {
+class DurationCard extends ConsumerWidget {
   final String duration;
   final String price;
+  final String planName;
 
   const DurationCard({
     super.key,
     required this.duration,
     required this.price,
+    required this.planName,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1C1C1C) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final shadowColor = isDark ? Colors.transparent : Colors.black12;
+    final borderColor = isDark ? Colors.white10 : Colors.transparent;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFD6FF3F),
-          width: 1.5,
-        ),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: borderColor),
+        boxShadow: [BoxShadow(color: shadowColor, blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             duration,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -100,33 +112,38 @@ class DurationCard extends StatelessWidget {
           Text(
             price,
             style: const TextStyle(
-              color: Color(0xFFD6FF3F),
+              color: Colors.red,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD6FF3F),
-                foregroundColor: Colors.black,
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                elevation: 0,
               ),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PaymentPage()),
+                  MaterialPageRoute(
+                    builder: (context) => PaymentPage(
+                      planName: planName,
+                      duration: duration,
+                    ),
+                  ),
                 );
               },
               child: const Text(
                 'Join Now',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
           ),
