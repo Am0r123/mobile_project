@@ -104,6 +104,10 @@ class _SupplementsPageState extends ConsumerState<SupplementsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Check Theme Mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -158,7 +162,7 @@ class _SupplementsPageState extends ConsumerState<SupplementsPage> {
                 child: isLoading 
                   ? const Center(child: CircularProgressIndicator()) 
                   : products.isEmpty 
-                    ? const Center(child: Text("Shop is empty"))
+                    ? Center(child: Text("Shop is empty", style: TextStyle(color: textColor)))
                     : Row(
                         children: [
                           IconButton(onPressed: moveLeft, icon: const Icon(Icons.arrow_back_ios, color: Colors.red)),
@@ -201,13 +205,22 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Theme Colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final placeholderColor = isDark ? Colors.grey[800] : Colors.grey[200];
+
     return Container(
       width: 180,
       margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5, offset: const Offset(0, 5))],
+        // Hide shadow in dark mode for cleaner look
+        boxShadow: isDark 
+          ? [] 
+          : [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5, offset: const Offset(0, 5))],
       ),
       child: Stack(
         children: [
@@ -215,7 +228,16 @@ class ProductCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  title, 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor), 
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -224,7 +246,7 @@ class ProductCard extends StatelessWidget {
                   errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 50, color: Colors.grey),
                   loadingBuilder: (c, child, progress) {
                     if (progress == null) return child;
-                    return Container(height: 120, width: 120, color: Colors.grey[200], child: const Center(child: CircularProgressIndicator()));
+                    return Container(height: 120, width: 120, color: placeholderColor, child: const Center(child: CircularProgressIndicator()));
                   },
                 ),
               ),
@@ -243,7 +265,7 @@ class ProductCard extends StatelessWidget {
   }
 }
 
-// NEW: FAVORITES PAGE
+// FAVORITES PAGE
 class FavoritesPage extends StatefulWidget {
   final List<Map<String, dynamic>> favoriteItems;
   final Function(String) onRemove;
@@ -257,22 +279,29 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
+    // Theme Colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Favorites", style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: Text("My Favorites", style: TextStyle(color: textColor)),
+        backgroundColor: bgColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: widget.favoriteItems.isEmpty 
-          ? const Center(child: Text("No favorites yet!", style: TextStyle(fontSize: 20)))
+          ? Center(child: Text("No favorites yet!", style: TextStyle(fontSize: 20, color: textColor)))
           : ListView.builder(
               itemCount: widget.favoriteItems.length,
               itemBuilder: (context, index) {
                 final item = widget.favoriteItems[index];
                 return Card(
+                  color: cardColor, // Set card color dynamically
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  elevation: 2,
+                  elevation: isDark ? 0 : 2, // Remove elevation in dark mode
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(10),
                     leading: ClipRRect(
@@ -283,7 +312,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         errorBuilder: (c, e, s) => const Icon(Icons.image_not_supported),
                       ),
                     ),
-                    title: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(item['title'], style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
