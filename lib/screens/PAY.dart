@@ -156,8 +156,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           counterText: "",
                         ),
                         validator: (value) {
-                          if (value == null || value.length != 19)
+                          if (value == null || value.length != 19) {
                             return "Invalid card number";
+                          }
                           return null;
                         },
                       ),

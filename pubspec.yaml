@@ -7,6 +7,9 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
+  health: ^13.0.0
+  permission_handler: ^11.0.0
+  fl_chart: ^0.66.0
   image_picker: ^1.0.7
   http: ^1.2.0
   shared_preferences: ^2.2.2

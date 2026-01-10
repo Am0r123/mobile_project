@@ -49,5 +49,9 @@
 	<string>We need access to your gallery to import workout data.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to capture workout data.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We need access to your heart rate and steps to visualize your fitness progress.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We need access to update your workout data.</string>
 </dict>
 </plist>

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// REMOVED: import 'package:shared_preferences/shared_preferences.dart';
 import 'todays_workout_page.dart';
 import '../services/exercise_gif_mapper.dart';
 import 'package:mobile_project/models/workout_result_model.dart';
@@ -18,6 +18,9 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   int currentIndex = 0;
   late int remainingSeconds;
   Timer? timer;
+  bool isPaused = false;
+  bool _isFinishing = false; 
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +29,7 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
 
   void _startExercise() {
     remainingSeconds = widget.exercises[currentIndex].minutes * 60;
+    isPaused = false;
     timer?.cancel();
 
     timer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -33,6 +37,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
         t.cancel();
         return;
       }
+
+      if (isPaused) return;
 
       if (remainingSeconds > 0) {
         setState(() => remainingSeconds--);
@@ -42,7 +48,15 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     });
   }
 
+  void _togglePause() {
+    setState(() {
+      isPaused = !isPaused;
+    });
+  }
+
   void _nextExercise() {
+    if (_isFinishing) return;
+
     timer?.cancel();
     if (currentIndex + 1 < widget.exercises.length) {
       setState(() => currentIndex++);
@@ -52,35 +66,38 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     }
   }
 
-  void _finishWorkout() async {
-    timer?.cancel();
-    int totalMinutes =
-        widget.exercises.fold(0, (sum, e) => sum + e.minutes);
-    int totalCalories =
-        widget.exercises.fold(
-            0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now().toIso8601String().split('T').first;
-    final history =
-        prefs.getStringList('completed_workouts') ?? [];
+  // UPDATED: No async, No SharedPreferences. Just return data.
+  void _finishWorkout() {
+    if (_isFinishing) return;
+    _isFinishing = true; 
 
-    history.add('$today|$totalMinutes|$totalCalories');
-    await prefs.setStringList('completed_workouts', history);
-    await prefs.setString('last_completed_day', today);
-    Navigator.pop(
-      context,
-      WorkoutResult(
-        name: "Today's Workout",
-        totalMinutes: totalMinutes,
-        totalCalories: totalCalories,
-      ),
-    );
+    timer?.cancel();
+    
+    int totalMinutes = widget.exercises.fold(0, (sum, e) => sum + e.minutes);
+    int totalCalories = widget.exercises.fold(0, (sum, e) => sum + e.minutes * e.caloriesPerMinute);
+    
+    if (mounted) {
+      Navigator.pop(
+        context,
+        WorkoutResult(
+          name: "Today's Workout",
+          totalMinutes: totalMinutes,
+          totalCalories: totalCalories,
+        ),
+      );
+    }
   }
 
   String _formatTime(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -99,8 +116,16 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Text(_formatTime(remainingSeconds),
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+            Text(
+              _formatTime(remainingSeconds),
+              style: TextStyle(
+                fontSize: 48, 
+                fontWeight: FontWeight.bold,
+                color: isPaused ? Colors.orange : Colors.black, 
+              ),
+            ),
+             if (isPaused)
+              const Text("PAUSED", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, letterSpacing: 2)),
 
             const SizedBox(height: 12),
 
@@ -119,19 +144,50 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: _nextExercise,
-                child: Text(
-                  currentIndex + 1 < widget.exercises.length ? "Skip" : "Finish",
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isPaused ? Colors.green : Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _togglePause,
+                      icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
+                      label: Text(
+                        isPaused ? "RESUME" : "PAUSE",
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                
+                const SizedBox(width: 16),
+
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _isFinishing ? null : _nextExercise,
+                      icon: _isFinishing 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                        : Icon(currentIndex + 1 < widget.exercises.length ? Icons.skip_next : Icons.check),
+                      label: Text(
+                        currentIndex + 1 < widget.exercises.length ? "SKIP" : "FINISH",
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           ],
         ),

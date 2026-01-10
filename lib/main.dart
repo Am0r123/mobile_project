@@ -133,6 +133,19 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               ref.read(themeProvider.notifier).toggleTheme(!isDark);
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false, 
+                );
+              }
+            },
+          ),
         ],
       ),
       drawer: Drawer(

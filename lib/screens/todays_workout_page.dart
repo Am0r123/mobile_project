@@ -181,17 +181,14 @@ class _TodaysWorkoutPageState extends State<TodaysWorkoutPage> {
                                 );
 
                                 if (result != null && context.mounted) {
-                                  // Save workout and mark today as completed
-                                  final prefs = await SharedPreferences.getInstance();
-                                  final raw =
-                                      prefs.getStringList('workout_history') ?? [];
-                                  final today = DateTime.now().toIso8601String().split('T').first;
-                                  raw.add('$today|${result.totalMinutes}|${result.totalCalories}');
-                                  await prefs.setStringList('workout_history', raw);
-
+                                  // --- FIXED LOGIC START ---
+                                  // 1. Mark UI as completed (Green checks)
                                   await _markTodayCompleted();
 
+                                  // 2. DO NOT SAVE TO HISTORY HERE!
+                                  // Just pass the result back to the Home Page.
                                   Navigator.pop(context, result);
+                                  // --- FIXED LOGIC END ---
                                 }
                               },
                         child: Text(
