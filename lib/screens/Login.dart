@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_project/main.dart';
-import 'package:mobile_project/screens/admin.dart';
+import 'package:mobile_project/screens/admin.dart'; // Admin Dashboard
+import 'package:mobile_project/screens/trainer.dart';
+import 'package:mobile_project/screens/trainer.dart'; // <--- MAKE SURE TO IMPORT YOUR TRAINER PAGE
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/providers.dart';
 
@@ -20,33 +22,63 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
-    if (email == 'admin@gmail.com' && password == 'password') {
-      setState(() => isLoading = true);
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!mounted) return;
-      
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardHome()),
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter email and password"), backgroundColor: Colors.red),
       );
       return;
     }
+
     setState(() => isLoading = true);
+
     try {
+      // 1. Authenticate with Supabase Auth
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
+      // 2. If Auth Successful, Check Role
       if (response.user != null) {
-        await ref.read(subscriptionProvider.notifier).refresh();
+        
+        // Fetch the user's role from the public 'users' table
+        // We use .maybeSingle() to avoid crashing if the user record is missing
+        final data = await Supabase.instance.client
+            .from('users')
+            .select('role')
+            .eq('id', response.user!.id)
+            .maybeSingle();
+
+        // Default to 'user' if no role is found
+        final role = data != null ? data['role'] as String : 'user';
 
         if (!mounted) return;
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainLayout()),
-          (route) => false,
-        );
+        // 3. Navigate based on Role
+        if (role == 'admin') {
+          // --- Navigate to ADMIN ---
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardHome()),
+          );
+        } else if (role == 'trainer') {
+          // --- Navigate to TRAINER ---
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TrainerPage()),
+          );
+        } else {
+          // --- Navigate to USER (Main App) ---
+          // Run your provider refresh logic for normal users
+          await ref.read(subscriptionProvider.notifier).refresh();
+
+          if (!mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainLayout()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -78,7 +110,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               const Text(
                 "SIGN IN",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 40),
               _buildInput("EMAIL", emailController),
@@ -91,11 +127,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: isLoading ? null : login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E88E5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      : const Text(
+                          "LOGIN",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               TextButton(
@@ -103,7 +147,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   context,
                   MaterialPageRoute(builder: (_) => const SignUpPage()),
                 ),
-                child: const Text("Create an account", style: TextStyle(color: Colors.white70)),
+                child: const Text(
+                  "Create an account",
+                  style: TextStyle(color: Colors.white70),
+                ),
               ),
             ],
           ),
@@ -121,18 +168,31 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final nameController = TextEditingController(); // Added Name Controller
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
 
   Future<void> signUp() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) return;
+
     setState(() => isLoading = true);
     try {
+      // 1. Create Auth User (Secure Login)
       final response = await Supabase.instance.client.auth.signUp(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      // 2. Insert into Public Database (So we know their role)
       if (response.user != null) {
+        await Supabase.instance.client.from('users').insert({
+          'id': response.user!.id,  // Links Auth to DB
+          'name': nameController.text.trim().isEmpty ? 'New User' : nameController.text.trim(),
+          'email': emailController.text.trim(),
+          'role': 'user', // <--- Public Signups are ALWAYSr 'user'
+        });
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -171,13 +231,12 @@ class _SignUpPageState extends State<SignUpPage> {
               const Text(
                 "SIGN UP",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 40),
+              // ADDED NAME INPUT
+              _buildInput("FULL NAME", nameController),
+              const SizedBox(height: 20),
               _buildInput("EMAIL", emailController),
               const SizedBox(height: 20),
               _buildInput("PASSWORD", passwordController, isPassword: true),
@@ -188,19 +247,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   onPressed: isLoading ? null : signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E88E5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "SIGN UP",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      : const Text("SIGN UP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
