@@ -23,66 +23,118 @@ class AdminApp extends StatelessWidget {
 }
 
 // ==========================================================
-// 1. DASHBOARD HOME
+// 1. DASHBOARD HOME (Refactored with Tabs)
 // ==========================================================
 class DashboardHome extends StatelessWidget {
   const DashboardHome({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Admin Dashboard"), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+    // 1. DefaultTabController enables the "Slider" logic
+    return DefaultTabController(
+      length: 3, // User, Trainer, Admin
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Admin Dashboard"),
+          centerTitle: true,
+          // 2. The TabBar is the visual slider at the top
+          bottom: const TabBar(
+            indicatorColor: Colors.white,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            tabs: [
+              Tab(icon: Icon(Icons.people), text: "Users"),
+              Tab(icon: Icon(Icons.fitness_center), text: "Trainers"),
+              Tab(icon: Icon(Icons.admin_panel_settings), text: "Admins"),
+            ],
+          ),
+        ),
+        // 3. TabBarView holds the content for each slider page
+        body: const TabBarView(
           children: [
-            const Text(
-              "Quick Actions",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                children: [
-                  // 1. ADD USER
-                  _DashboardCard(
-                    icon: Icons.person_add, 
-                    title: "Add New User", 
-                    color: Colors.blueAccent, 
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddUserPage()))
-                  ),
-                  
-                  // 2. VIEW USERS
-                  _DashboardCard(
-                    icon: Icons.list_alt, 
-                    title: "View Users", 
-                    color: Colors.orangeAccent, 
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ViewUsersPage()))
-                  ),
-                  
-                  // 3. EDIT USERS (Select to Edit)
-                  _DashboardCard(
-                    icon: Icons.edit, 
-                    title: "Edit User", 
-                    color: Colors.green, 
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditUsersListPage()))
-                  ),
-                  
-                  // 4. REMOVE USERS (Select to Delete)
-                  _DashboardCard(
-                    icon: Icons.delete_forever, 
-                    title: "Remove User", 
-                    color: Colors.redAccent, 
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteUsersListPage()))
-                  ),
-                ],
-              ),
-            ),
+            // PASS THE ROLE NAME TO EACH TAB
+            _RoleManagementTab(role: 'user', color: Colors.blueAccent),
+            _RoleManagementTab(role: 'trainer', color: Colors.orange),
+            _RoleManagementTab(role: 'admin', color: Colors.purple),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ==========================================================
+// 2. REUSABLE MENU TAB (Generates the 4 buttons)
+// ==========================================================
+class _RoleManagementTab extends StatelessWidget {
+  final String role; // 'user', 'trainer', or 'admin'
+  final Color color;
+
+  const _RoleManagementTab({required this.role, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    // Capitalize first letter for display (e.g., "trainer" -> "Trainer")
+    String displayRole = role[0].toUpperCase() + role.substring(1);
+
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        children: [
+          Text(
+            "Manage ${displayRole}s",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 15,
+              mainAxisSpacing: 15,
+              children: [
+                // 1. ADD
+                _DashboardCard(
+                  icon: Icons.add_circle,
+                  title: "Add $displayRole",
+                  color: color,
+                  onTap: () => Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => GenericAddPage(role: role))
+                  ),
+                ),
+                // 2. VIEW
+                _DashboardCard(
+                  icon: Icons.list_alt,
+                  title: "View $displayRole",
+                  color: color,
+                  onTap: () => Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => GenericListPage(role: role, mode: 'view', color: color))
+                  ),
+                ),
+                // 3. EDIT
+                _DashboardCard(
+                  icon: Icons.edit,
+                  title: "Edit $displayRole",
+                  color: Colors.green, // Edit is always green usually
+                  onTap: () => Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => GenericListPage(role: role, mode: 'edit', color: Colors.green))
+                  ),
+                ),
+                // 4. DELETE
+                _DashboardCard(
+                  icon: Icons.delete_forever,
+                  title: "Remove $displayRole",
+                  color: Colors.redAccent, // Delete is always red
+                  onTap: () => Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => GenericListPage(role: role, mode: 'delete', color: Colors.redAccent))
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -105,7 +157,7 @@ class _DashboardCard extends StatelessWidget {
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           CircleAvatar(radius: 30, backgroundColor: color.withOpacity(0.1), child: Icon(icon, size: 30, color: color)),
           const SizedBox(height: 15),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
         ]),
       ),
     );
@@ -113,41 +165,44 @@ class _DashboardCard extends StatelessWidget {
 }
 
 // ==========================================================
-// 2. ADD USER PAGE
+// 3. GENERIC ADD PAGE (Works for User, Trainer, Admin)
 // ==========================================================
-class AddUserPage extends StatefulWidget {
+class GenericAddPage extends StatefulWidget {
+  final String role; // Stores 'user', 'trainer', or 'admin'
+  const GenericAddPage({super.key, required this.role});
+
   @override
-  _AddUserPageState createState() => _AddUserPageState();
+  _GenericAddPageState createState() => _GenericAddPageState();
 }
 
-class _AddUserPageState extends State<AddUserPage> {
+class _GenericAddPageState extends State<GenericAddPage> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
 
-  Future<void> addUser() async {
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Email and Password required")));
-      return;
-    }
+  Future<void> addEntity() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) return;
     setState(() => isLoading = true);
 
     try {
+      // 1. Create Login in Auth
       final authResponse = await Supabase.instance.client.auth.signUp(
         email: emailController.text,
         password: passwordController.text,
       );
 
       if (authResponse.user != null) {
+        // 2. Create Profile in DB with the correct ROLE
         await Supabase.instance.client.from('users').insert({
           'id': authResponse.user!.id,
           'name': nameController.text,
           'email': emailController.text,
+          'role': widget.role, // <--- IMPORTANT: This saves 'trainer', 'admin' etc.
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User created & synced!")));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${widget.role.toUpperCase()} Created!")));
           Navigator.pop(context);
         }
       }
@@ -160,8 +215,10 @@ class _AddUserPageState extends State<AddUserPage> {
 
   @override
   Widget build(BuildContext context) {
+    String displayRole = widget.role[0].toUpperCase() + widget.role.substring(1);
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New User')),
+      appBar: AppBar(title: Text('Add New $displayRole')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -175,9 +232,9 @@ class _AddUserPageState extends State<AddUserPage> {
             SizedBox(
               width: double.infinity, height: 50,
               child: ElevatedButton(
-                onPressed: isLoading ? null : addUser,
+                onPressed: isLoading ? null : addEntity,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-                child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Create Account'),
+                child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Text('Create Account'),
               ),
             ),
           ],
@@ -188,176 +245,65 @@ class _AddUserPageState extends State<AddUserPage> {
 }
 
 // ==========================================================
-// 3. VIEW USERS PAGE (Read Only List)
+// 4. GENERIC LIST PAGE (Smart list for View, Edit, Delete)
 // ==========================================================
-class ViewUsersPage extends StatefulWidget {
-  const ViewUsersPage({super.key});
+class GenericListPage extends StatefulWidget {
+  final String role; // 'user', 'trainer', 'admin'
+  final String mode; // 'view', 'edit', 'delete'
+  final Color color;
+
+  const GenericListPage({super.key, required this.role, required this.mode, required this.color});
+
   @override
-  _ViewUsersPageState createState() => _ViewUsersPageState();
+  _GenericListPageState createState() => _GenericListPageState();
 }
 
-class _ViewUsersPageState extends State<ViewUsersPage> {
-  List<Map<String, dynamic>> _users = [];
+class _GenericListPageState extends State<GenericListPage> {
+  List<Map<String, dynamic>> _dataList = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
+    _fetchData();
   }
 
-  Future<void> _fetchUsers() async {
-    if (!mounted) return;
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
-      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
+      // Fetch users ONLY where the role matches the current tab
+      final data = await Supabase.instance.client
+          .from('users')
+          .select()
+          .eq('role', widget.role) // <--- FILTERING HAPPENS HERE
+          .order('name', ascending: true);
+          
+      if (mounted) setState(() { _dataList = List<Map<String, dynamic>>.from(data); _isLoading = false; });
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("View Users"), backgroundColor: Colors.orangeAccent),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : ListView.builder(
-            itemCount: _users.length,
-            padding: const EdgeInsets.all(10),
-            itemBuilder: (context, index) {
-              final user = _users[index];
-              return Card(
-                child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(user['name'] ?? 'Unknown'),
-                  subtitle: Text(user['email'] ?? 'No Email'),
-                ),
-              );
-            },
-          ),
-    );
-  }
-}
-
-// ==========================================================
-// 4. EDIT USERS LIST PAGE (Select to Edit)
-// ==========================================================
-class EditUsersListPage extends StatefulWidget {
-  const EditUsersListPage({super.key});
-  @override
-  _EditUsersListPageState createState() => _EditUsersListPageState();
-}
-
-class _EditUsersListPageState extends State<EditUsersListPage> {
-  List<Map<String, dynamic>> _users = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUsers();
-  }
-
-  Future<void> _fetchUsers() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    try {
-      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
-      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Select User to Edit"), backgroundColor: Colors.green),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : ListView.builder(
-            itemCount: _users.length,
-            padding: const EdgeInsets.all(10),
-            itemBuilder: (context, index) {
-              final user = _users[index];
-              return Card(
-                child: ListTile(
-                  title: Text(user['name'] ?? 'Unknown'),
-                  subtitle: Text(user['email'] ?? 'No Email'),
-                  trailing: const Icon(Icons.edit, color: Colors.green),
-                  onTap: () async {
-                    // Go to Edit Form Page
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserForm(user: user)));
-                    // Refresh when we come back
-                    _fetchUsers();
-                  },
-                ),
-              );
-            },
-          ),
-    );
-  }
-}
-
-// ==========================================================
-// 5. DELETE USERS LIST PAGE (Select to Delete)
-// ==========================================================
-class DeleteUsersListPage extends StatefulWidget {
-  const DeleteUsersListPage({super.key});
-  @override
-  _DeleteUsersListPageState createState() => _DeleteUsersListPageState();
-}
-
-class _DeleteUsersListPageState extends State<DeleteUsersListPage> {
-  List<Map<String, dynamic>> _users = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUsers();
-  }
-
-  Future<void> _fetchUsers() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    try {
-      final data = await Supabase.instance.client.from('users').select().order('name', ascending: true);
-      if (mounted) setState(() { _users = List<Map<String, dynamic>>.from(data); _isLoading = false; });
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _showDeleteDialog(Map<String, dynamic> user) {
+  void _deleteItem(Map<String, dynamic> item) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Delete User Permanently"),
-        content: Text("This will delete ${user['name']} from the App AND Login system. Are you sure?"),
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Permanently"),
+        content: Text("Delete ${item['name']}?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           TextButton(
             onPressed: () async {
-              Navigator.pop(dialogContext); // Close dialog
+              Navigator.pop(context);
               try {
-                // Call SQL function for hard delete
-                await Supabase.instance.client.rpc('admin_delete_user', params: {
-                  'target_user_id': user['id']
-                });
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User Hard Deleted!")));
-                  _fetchUsers(); // Refresh list
-                }
+                await Supabase.instance.client.rpc('admin_delete_user', params: {'target_user_id': item['id']});
+                _fetchData(); // Refresh list
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
               }
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
+          )
         ],
       ),
     );
@@ -366,30 +312,51 @@ class _DeleteUsersListPageState extends State<DeleteUsersListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Select User to Remove"), backgroundColor: Colors.redAccent),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : ListView.builder(
-            itemCount: _users.length,
-            padding: const EdgeInsets.all(10),
-            itemBuilder: (context, index) {
-              final user = _users[index];
-              return Card(
-                child: ListTile(
-                  title: Text(user['name'] ?? 'Unknown'),
-                  subtitle: Text(user['email'] ?? 'No Email'),
-                  trailing: const Icon(Icons.delete, color: Colors.red),
-                  onTap: () => _showDeleteDialog(user),
+      appBar: AppBar(
+        title: Text("${widget.mode.toUpperCase()} ${widget.role}s"), 
+        backgroundColor: widget.color
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _dataList.isEmpty 
+              ? Center(child: Text("No ${widget.role}s found")) 
+              : ListView.builder(
+                  itemCount: _dataList.length,
+                  padding: const EdgeInsets.all(10),
+                  itemBuilder: (context, index) {
+                    final item = _dataList[index];
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(child: Icon(Icons.person)),
+                        title: Text(item['name'] ?? 'Unknown'),
+                        subtitle: Text(item['email'] ?? 'No Email'),
+                        // Logic to show Edit or Delete icon based on mode
+                        trailing: widget.mode == 'view'
+                            ? null
+                            : Icon(
+                                widget.mode == 'edit' ? Icons.edit : Icons.delete, 
+                                color: widget.color
+                              ),
+                        onTap: () {
+                          if (widget.mode == 'edit') {
+                            // Go to Edit Page
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserForm(user: item)))
+                                .then((_) => _fetchData());
+                          } else if (widget.mode == 'delete') {
+                            // Trigger Delete Popup
+                            _deleteItem(item);
+                          }
+                        },
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
     );
   }
 }
 
 // ==========================================================
-// 6. EDIT USER FORM (The actual edit screen)
+// 5. EDIT FORM (Kept mostly the same, but works for all roles)
 // ==========================================================
 class EditUserForm extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -414,7 +381,6 @@ class _EditUserFormState extends State<EditUserForm> {
   Future<void> updateUser() async {
     setState(() => isLoading = true);
     try {
-      // Call SQL function for hard edit
       await Supabase.instance.client.rpc('admin_update_user', params: {
         'target_user_id': widget.user['id'],
         'new_email': emailController.text.trim(),
@@ -422,7 +388,7 @@ class _EditUserFormState extends State<EditUserForm> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User Login & Profile Updated!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Updated Successfully!")));
         Navigator.pop(context);
       }
     } catch (e) {
@@ -435,7 +401,7 @@ class _EditUserFormState extends State<EditUserForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Update User Details"), backgroundColor: Colors.green),
+      appBar: AppBar(title: const Text("Update Details"), backgroundColor: Colors.green),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
