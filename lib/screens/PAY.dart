@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../providers/providers.dart';
@@ -126,38 +126,53 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       ),
                       const SizedBox(height: 15),
 
+                      // ---------------- NAME FIELD ----------------
                       const CustomLabel(text: "Name on Card"),
                       TextFormField(
                         controller: nameController,
                         style: const TextStyle(color: Colors.black),
+                        // 1. Validation: Allow only letters (a-z, A-Z) and spaces
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                        ],
                         decoration: const InputDecoration(
                             hintText: "Enter Name",
                             border: OutlineInputBorder()),
-                        validator: (value) => (value == null || value.isEmpty)
-                            ? "Required"
-                            : null,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Required";
+                          }
+                          // Extra check regex for validator
+                          if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                            return "Only letters allowed";
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 15),
 
+                      // ---------------- CARD NUMBER FIELD ----------------
                       const CustomLabel(text: "Credit Card Number"),
                       TextFormField(
                         controller: numberController,
                         keyboardType: TextInputType.number,
-                        maxLength: 19,
+                        // 2. Validation: 12 digits + 2 dashes = 14 characters total
+                        maxLength: 14, 
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
-                          CardNumberFormatter()
+                          CardNumberFormatter(), // Modified below for 12 digits
                         ],
                         style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
-                          hintText: "1111-2222-3333-4444",
+                          hintText: "1111-2222-3333", // Example of 12 digits
                           hintStyle: TextStyle(color: Colors.grey),
                           border: OutlineInputBorder(),
                           counterText: "",
                         ),
                         validator: (value) {
-                          if (value == null || value.length != 19) {
-                            return "Invalid card number";
+                          // Check if length matches 12 digits + dashes (14 chars)
+                          if (value == null || value.length != 14) {
+                            return "12 digits required";
                           }
                           return null;
                         },
@@ -191,12 +206,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       ),
                       const SizedBox(height: 15),
 
+                      // ---------------- CVV FIELD ----------------
                       const CustomLabel(text: "CVV"),
                       TextFormField(
                         controller: cvvController,
                         keyboardType: TextInputType.number,
                         obscureText: true,
                         maxLength: 3,
+                        // 3. Validation: Digits only
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                             hintText: "123",
@@ -241,6 +261,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   }
 }
 
+// ... CustomLabel and CounterSelector remain exactly the same ...
 class CustomLabel extends StatelessWidget {
   final String text;
   const CustomLabel({super.key, required this.text});
@@ -308,18 +329,25 @@ class CounterSelector extends StatelessWidget {
   }
 }
 
+// ---------------- UPDATED FORMATTER FOR 12 DIGITS ----------------
 class CardNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
+    
+    // Remove anything that isn't a digit
     String text = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (text.length > 16) text = text.substring(0, 16);
+    
+    // Enforce 12 digit limit (User Requirement)
+    if (text.length > 12) text = text.substring(0, 12);
 
     var buffer = StringBuffer();
     for (int i = 0; i < text.length; i++) {
       buffer.write(text[i]);
+      // Add a dash after every 4th digit, but not at the very end
       if ((i + 1) % 4 == 0 && (i + 1) != text.length) buffer.write("-");
     }
+    
     return TextEditingValue(
       text: buffer.toString(),
       selection: TextSelection.collapsed(offset: buffer.length),
