@@ -21,6 +21,7 @@ class _ContactPageState extends State<ContactPage> {
   bool _sending = false;
   Future<void> _sendMessage() async {
     final user = Supabase.instance.client.auth.currentUser;
+
     if (user == null) {
       if (!mounted) return;
       _showSnack('You must be logged in to send a message');
