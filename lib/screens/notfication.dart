@@ -1,145 +1,85 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class NotificationPage extends ConsumerStatefulWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
 
   @override
-  ConsumerState<NotificationPage> createState() => _NotificationPageState();
+  State<NotificationPage> createState() => _NotificationPageState();
 }
 
-class _NotificationPageState extends ConsumerState<NotificationPage> {
-  int _selectedIndex = 0;
+class _NotificationPageState extends State<NotificationPage> {
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
 
-  static final List<Widget> _widgetOptions = <Widget>[
-    const NotificationScreen(),
-    const Center(child: Text('Steps Screen Placeholder')), 
-    const Center(child: Text('New Screen Placeholder')),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  Future<void> _fetchNotifications() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('notifications')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _notifications = List<Map<String, dynamic>>.from(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1C1C1C) : Colors.white;
-
     return Scaffold(
-      body: _widgetOptions[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: cardColor,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Workouts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_walk),
-            label: 'Steps',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'New',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        elevation: 10,
-      ),
-    );
-  }
-}
-
-class NotificationScreen extends ConsumerWidget {
-  const NotificationScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1C1C1C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? Colors.grey[400]! : Colors.black54;
-    final shadowColor = isDark ? Colors.transparent : Colors.black12;
-    final borderColor = isDark ? Colors.white10 : Colors.transparent;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Notification Details",
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-            const SizedBox(height: 30),
-            
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: borderColor),
-                boxShadow: [BoxShadow(color: shadowColor, blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "New day Workouts",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
+      backgroundColor: const Color(0xFFF5F6FA),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.red))
+            : _notifications.isEmpty
+                ? const Center(child: Text("No messages"))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(15),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final item = _notifications[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['title'] ?? 'Message',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold, 
+                                  fontSize: 16
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                item['body'] ?? '',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const Icon(Icons.circle, size: 10, color: Colors.red),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Today's workout plan is ready.",
-                    style: TextStyle(fontSize: 15, color: subTextColor),
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () {
-                      print("Link clicked");
+                      );
                     },
-                    child: const Text(
-                      "View Workout",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "12/14/2025, 4:39:30 PM",
-                    style: TextStyle(fontSize: 12, color: subTextColor.withOpacity(0.5)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

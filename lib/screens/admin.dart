@@ -37,7 +37,7 @@ class DashboardHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5, // Changed from 3 to 5 (Users, Trainers, Admins, Shop, Plans)
+      length: 6, // Changed from 3 to 5 (Users, Trainers, Admins, Shop, Plans)
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Admin Dashboard"),
@@ -52,6 +52,7 @@ class DashboardHome extends StatelessWidget {
               Tab(icon: Icon(Icons.admin_panel_settings), text: "Admins"),
               Tab(icon: Icon(Icons.storefront), text: "Shop"), // New Tab
               Tab(icon: Icon(Icons.price_change), text: "Plans"), // New Tab
+              Tab(icon: Icon(Icons.message), text: "Messages"), // NEW TAB
             ],
           ),
         ),
@@ -67,6 +68,8 @@ class DashboardHome extends StatelessWidget {
             ManageShopTab(),
             // 5. Plans Manager (Embedded)
             AdminPlansTab(),
+            // 6. Messages Manager (NEW)
+            MessagesTab(),
           ],
         ),
       ),
@@ -698,6 +701,142 @@ class AdminPlansTab extends ConsumerWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+// ==========================================================
+// 7. MESSAGES TAB (View Contact Us Messages)
+// ==========================================================
+class MessagesTab extends StatefulWidget {
+  const MessagesTab({super.key});
+
+  @override
+  State<MessagesTab> createState() => _MessagesTabState();
+}
+
+class _MessagesTabState extends State<MessagesTab> {
+  List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMessages();
+  }
+
+  Future<void> _fetchMessages() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('contact_messages') // Ensure this table exists
+          .select()
+          .order('created_at', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _messages = List<Map<String, dynamic>>.from(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- LOGIC: SEND REPLY ---
+  Future<void> _sendReply(String userId, String replyText) async {
+    try {
+      await Supabase.instance.client.from('notifications').insert({
+        'user_id': userId, // Send specifically to this user
+        'title': 'Admin Reply',
+        'body': replyText,
+      });
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Reply sent!")));
+      }
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  void _showReplyDialog(Map<String, dynamic> msg) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Reply to ${msg['full_name'] ?? 'User'}"),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: "Type your reply here...",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              // Ensure the message has a user_id to reply to
+              if (msg['user_id'] != null) {
+                _sendReply(msg['user_id'], controller.text);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cannot reply: No User ID found on this message.")));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+            child: const Text("Send"),
+          )
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _messages.isEmpty
+              ? const Center(child: Text("No messages"))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(15),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = _messages[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 15),
+                      child: ExpansionTile(
+                        leading: const CircleAvatar(child: Icon(Icons.email)),
+                        title: Text(msg['full_name'] ?? 'Unknown'),
+                        subtitle: Text(msg['message'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                        childrenPadding: const EdgeInsets.all(16),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text("Full Message: ${msg['message']}")
+                          ),
+                          const SizedBox(height: 15),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // --- REPLY BUTTON ---
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.reply, size: 18),
+                                label: const Text("Reply"),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                                onPressed: () => _showReplyDialog(msg),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
